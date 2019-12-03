@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -18,11 +19,15 @@ namespace Day_03
             sw.Start();
 
             var wires = input.Select(WireToPoints).ToList();
-            var crossings = wires[0].Intersect(wires[1]);
+            var crossings = wires[0].Keys.Intersect(wires[1].Keys);
 
             var closest = crossings.MinBy(DistanceFromOrigin).First();
+            Console.WriteLine($"Part 1: point {closest} is in both wires and close to the origin.");
 
-            Console.WriteLine($"Part1: point {closest} is in both wires and close to the origin.");
+            var shortest = crossings.MinBy(x => wires[0][x] + wires[1][x]).First();
+            var delay = wires[0][shortest] + wires[1][shortest];
+            Console.WriteLine($"Part 2: point {shortest} has signal delay {delay}");
+
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
@@ -35,11 +40,11 @@ namespace Day_03
         }
 
 
-        private static HashSet<Point> WireToPoints(string text)
+        private static Dictionary<Point, int> WireToPoints(string text)
         {
             var current = new Point();
-            var points = new HashSet<Point>();
-            //points.Add(current);
+            var steps = 0;
+            var points = new Dictionary<Point, int>();
 
             foreach (var segment in text.Split(","))
             {
@@ -48,7 +53,9 @@ namespace Day_03
                 for (int i = 0; i < count; i++)
                 {
                     current += dir;
-                    _ = points.Add(current);
+                    steps += 1;
+                    if (!points.ContainsKey(current))
+                        points.Add(current, steps);
                 }
             }
             return points;
@@ -61,5 +68,11 @@ namespace Day_03
             {'R', new Size(1, 0)},
             {'D', new Size(0, 1)}
         };
+
+        private class CompareKvpByKeyComparer : IEqualityComparer<KeyValuePair<Point, int>>
+        {
+            public bool Equals([AllowNull] KeyValuePair<Point, int> x, [AllowNull] KeyValuePair<Point, int> y) => x.Key.Equals(y.Key);
+            public int GetHashCode([DisallowNull] KeyValuePair<Point, int> obj) => obj.Key.GetHashCode();
+        }
     }
 }
