@@ -95,6 +95,11 @@ namespace Day_04
                 }
                 else
                 {
+                    // Last digit is 9 already. Therfore:
+                    // - Find the next digit to the left that is not 9
+                    // - increase it and
+                    // - set all digits to its right to the same digit
+                    // For example 345599 becomes 345666
                     for (var i = 4; i >= 0; i--)
                     {
                         if (current[i] != '9')
