@@ -12,6 +12,19 @@ namespace Core.Test
     [TestClass]
     public class LinqTests
     {
+        [DataTestMethod]
+        [DataRow("AABBCCDD", "AA", "BB", "CC", "DD")]
+        [DataRow("AAAABBC", "AAAA", "BB", "C")]
+        [DataRow("ABGR", "A", "B", "G", "R")]
+        [DataRow("AAAAAAA", "AAAAAAA")]
+        [DataRow("1100111", "11", "00", "111")]
+        public void RightChunks(string data, params string[] expectedChunks)
+        {
+            var chunks = data.Chunks().Select(c => string.Concat(c)).ToList();
+            CollectionAssert.AreEqual(expectedChunks, chunks, $"string: '{data}'");
+        }
+
+
         [TestMethod]
         public void RightNumberOfDoubles()
         {
