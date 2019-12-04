@@ -12,23 +12,31 @@ namespace Day_04
         static void Main(string[] args)
         {
             var input = new string[] { "134564", "585159" };
-            const int runs = 100000;
+            const int runs = 10000;
             var counts = new int[runs];
+
+            _ = NonDecreasingSequences(input[0], input[1]).Where(HasRunsof2orMore).Count();
+            _ = NonDecreasingSequences(input[0], input[1]).Where(HasRunsof2).Count();
 
             var sw = new Stopwatch();
             sw.Start();
 
-            for (int i = 0; i < runs; i++)
+            for (var i = 0; i < runs; i++)
             {
-                var codes = NonDecreasingSequences(input[0].ToCharArray(), input[1].ToCharArray());
-                var codesWithDoubles = codes.Where(HasRunsof2orMore);
-
-                counts[i] = codesWithDoubles.Count();
+                // Part1: HasRunsof2orMore
+                // Part2: HasRunsof2
+                counts[i] = NonDecreasingSequences(input[0], input[1]).Where(HasRunsof2orMore).Count();
             }
 
-            Console.WriteLine($"Part 1: {counts[0]} codes fulfil this.");
+            Console.WriteLine($"Input range: {input[0]} to {input[1]}");
+            Console.WriteLine($"Codes that fulfil the conditions: {counts[0]}");
             sw.Stop();
-            Console.WriteLine($"Solving took {sw.ElapsedMilliseconds * 1000 / runs}µs on average.");
+
+            Debug.Assert(counts.AreAllEqual());
+
+            Console.WriteLine();
+            Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms for {runs} runs.");
+            Console.WriteLine($"Average time per solution: {sw.ElapsedMilliseconds * 1000 / runs}µs.");
             _ = Console.ReadLine();
         }
 
@@ -61,12 +69,22 @@ namespace Day_04
             return run == 2;
         }
 
-        static IEnumerable<char[]> NonDecreasingSequences(char[] start, char[] end)
+        static int toNumber(char[] x)
         {
-            static int toNumber(char[] x) => (x[0] * 100000) + (x[1] * 10000) + (x[2] * 1000) + (x[3] * 100) + (x[4] * 10) + x[5];
+            static int chartoNum(char c, int multiplier) => (c - '0') * multiplier;
 
-            var current = start;
-            var endNumber = toNumber(end);
+            return chartoNum(x[0], 100000)
+                + chartoNum(x[1], 10000)
+                + chartoNum(x[2], 1000)
+                + chartoNum(x[3], 100)
+                + chartoNum(x[4], 10)
+                + chartoNum(x[5], 1);
+        }
+
+        static IEnumerable<char[]> NonDecreasingSequences(string start, string end)
+        {
+            var current = start.ToCharArray();
+            var endNumber = int.Parse(end);
             while (toNumber(current) <= endNumber)
             {
                 yield return current;
