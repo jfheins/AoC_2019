@@ -84,6 +84,16 @@ namespace Day_04
         static IEnumerable<char[]> NonDecreasingSequences(string start, string end)
         {
             var current = start.ToCharArray();
+
+            // Ensure that the first number is already non-decreasing
+            var last = '0';
+            for (var i = 0; i < current.Length; i++)
+            {
+                if (current[i] < last)
+                    current[i] = last;
+                last = current[i];
+            }
+
             var endNumber = int.Parse(end);
             while (toNumber(current) <= endNumber)
             {
