@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Core;
+using MoreLinq;
 
 namespace Day_04
 {
@@ -9,31 +11,55 @@ namespace Day_04
     {
         static void Main(string[] args)
         {
-            var range = 134564..585159;
-            var input = Enumerable.Range(134564, 585159 - 134564 + 1);
+            var input = new string[] { "134564", "585159" };
+            var counts = new int[10000];
 
             var sw = new Stopwatch();
             sw.Start();
 
-            var codes = input.Count(Check);
+            for (int i = 0; i < 10000; i++)
+            {
 
-            Console.WriteLine($"Part 1: {codes} codes fulfil this.");
+                var codes = NonDecreasingSequences(input[0].ToCharArray(), input[1].ToCharArray());
+                var codesWithDoubles = codes.Where(code => code.Chunks().Any(run => run.Count() == 2));
 
+                counts[i] = codesWithDoubles.Count();
+            }
+
+            Console.WriteLine($"Part 1: {counts[0]} codes fulfil this.");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        static bool Check(int num)
+        static IEnumerable<char[]> NonDecreasingSequences(char[] start, char[] end)
         {
-            var digits = num.ToString().Select(t => int.Parse(t.ToString())).ToArray();
-            var pairs = digits.PairwiseWithOverlap().ToList();
-            var isNotDecreasing = pairs.All(x => x.Item1 <= x.Item2);
+            static int toNumber(char[] x) => (x[0] * 100000) + (x[1] * 10000) + (x[2] * 1000) + (x[3] * 100) + (x[4] * 10) + x[5];
 
-            var runs = digits.Chunks().ToList();
-            var hasdouble = runs.Any(c => c.Count() == 2);
+            var current = start;
+            var endNumber = toNumber(end);
+            while (toNumber(current) <= endNumber)
+            {
+                yield return current;
 
-            return hasdouble && isNotDecreasing;
+                if (current[5] != '9')
+                {
+                    current[5]++;
+                }
+                else
+                {
+                    for (var i = 4; i >= 0; i--)
+                    {
+                        if (current[i] != '9')
+                        {
+                            current[i]++;
+                            for (var j = i + 1; j < 6; j++)
+                                current[j] = current[i];
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 }
