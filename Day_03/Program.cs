@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using MoreLinq.Extensions;
+using Core;
 
 namespace Day_03
 {
@@ -19,7 +20,7 @@ namespace Day_03
             sw.Start();
 
             var wires = input.Select(WireToPoints).ToList();
-            var crossings = wires[0].Keys.Intersect(wires[1].Keys);
+            var crossings = new HashSet<Point>(wires[0].Keys.Intersect(wires[1].Keys));
 
             var closest = crossings.MinBy(DistanceFromOrigin).First();
             Console.WriteLine($"Part 1: point {closest} is in both wires and close to the origin.");
@@ -27,6 +28,27 @@ namespace Day_03
             var shortest = crossings.MinBy(x => wires[0][x] + wires[1][x]).First();
             var delay = wires[0][shortest] + wires[1][shortest];
             Console.WriteLine($"Part 2: point {shortest} has signal delay {delay}");
+
+            var search1 = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, p =>
+                _mapDirectionToSize.Values.Select(s => p + s).Where(wires[0].Keys.Contains)
+            )
+            { PerformParallelSearch = false };
+
+            var wire1 = search1.FindAll(Point.Empty, p => crossings.Contains(p))
+                .ToDictionary(x => x.Target, x => x.Length);
+
+
+            var search2 = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, p =>
+                _mapDirectionToSize.Values.Select(s => p + s).Where(wires[1].Keys.Contains)
+            )
+            { PerformParallelSearch = false };
+
+            var wire2 = search2.FindAll(Point.Empty, p => crossings.Contains(p))
+                .ToDictionary(x => x.Target, x => x.Length);
+
+            var shortedCrossings = crossings.MinBy(x => wire1[x] + wire2[x]).First();
+            delay = wire1[shortedCrossings] + wire2[shortedCrossings];
+            Console.WriteLine($"Part 3: point {shortedCrossings} has signal delay {delay}");
 
 
             sw.Stop();
@@ -50,7 +72,7 @@ namespace Day_03
             {
                 var dir = _mapDirectionToSize[segment[0]];
                 var count = int.Parse(segment.Substring(1));
-                for (int i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     current += dir;
                     steps += 1;
@@ -69,10 +91,10 @@ namespace Day_03
             {'D', new Size(0, 1)}
         };
 
-        private class CompareKvpByKeyComparer : IEqualityComparer<KeyValuePair<Point, int>>
+        private class CompareKvpByKeyComparer<TKey, TValue> : IEqualityComparer<KeyValuePair<TKey, TValue>>
         {
-            public bool Equals([AllowNull] KeyValuePair<Point, int> x, [AllowNull] KeyValuePair<Point, int> y) => x.Key.Equals(y.Key);
-            public int GetHashCode([DisallowNull] KeyValuePair<Point, int> obj) => obj.Key.GetHashCode();
+            public bool Equals([AllowNull] KeyValuePair<TKey, TValue> x, [AllowNull] KeyValuePair<TKey, TValue> y) => x.Key.Equals(y.Key);
+            public int GetHashCode([DisallowNull] KeyValuePair<TKey, TValue> obj) => obj.Key.GetHashCode();
         }
     }
 }
