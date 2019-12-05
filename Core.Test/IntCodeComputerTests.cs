@@ -66,7 +66,7 @@ namespace Core.Test
         }
 
         [TestMethod]
-        public void Program_5()
+        public void Program_D5_negative_instr()
         {
             var computer = new IntCodeComputer(new int[] { 1101, 100, -1, 4, 0 });
             computer.Run(5);
@@ -102,12 +102,52 @@ namespace Core.Test
         }
 
         [DataTestMethod]
+        [DataRow(6, 0)]
         [DataRow(7, 0)]
         [DataRow(8, 1)]
         [DataRow(9, 0)]
-        public void CompareJump_1(int input, int expected)
+        public void CompareJump_1_equals_8(int input, int expected)
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
+            computer.Inputs.Add(input);
+            computer.Run(10);
+            Assert.AreEqual(expected, computer.Outputs.First());
+        }
+
+        [DataTestMethod]
+        [DataRow(6, 1)]
+        [DataRow(7, 1)]
+        [DataRow(8, 0)]
+        [DataRow(9, 0)]
+        public void CompareJump_2_lessthan_8(int input, int expected)
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8 });
+            computer.Inputs.Add(input);
+            computer.Run(10);
+            Assert.AreEqual(expected, computer.Outputs.First());
+        }
+
+        [DataTestMethod]
+        [DataRow(6, 0)]
+        [DataRow(7, 0)]
+        [DataRow(8, 1)]
+        [DataRow(9, 0)]
+        public void CompareJump_3_equal_8(int input, int expected)
         {
             var computer = new IntCodeComputer(new int[] { 3, 3, 1108, -1, 8, 3, 4, 3, 99 });
+            computer.Inputs.Add(input);
+            computer.Run(10);
+            Assert.AreEqual(expected, computer.Outputs.First());
+        }
+
+        [DataTestMethod]
+        [DataRow(6, 1)]
+        [DataRow(7, 1)]
+        [DataRow(8, 0)]
+        [DataRow(9, 0)]
+        public void CompareJump_4_lessthan_8(int input, int expected)
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 3, 1107, -1, 8, 3, 4, 3, 99 });
             computer.Inputs.Add(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());

@@ -19,7 +19,6 @@ namespace Day_05
 
             var computer = new IntCodeComputer(input);
             computer.Inputs.Add(1);
-
             computer.Run();
             var code = computer.Outputs.Last();
 
@@ -29,6 +28,7 @@ namespace Day_05
             computer.Inputs.Add(5);
 
             computer.Run();
+
             code = computer.Outputs.Last();
             Console.WriteLine($"Part 2: output is {code} after {computer.StepCount} steps.");
 
