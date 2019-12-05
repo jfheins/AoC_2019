@@ -25,6 +25,13 @@ namespace Day_05
 
             Console.WriteLine($"Part 1: output is {code} after {computer.StepCount} steps.");
 
+            computer = new IntCodeComputer(input);
+            computer.Inputs.Add(5);
+
+            computer.Run();
+            code = computer.Outputs.Last();
+            Console.WriteLine($"Part 2: output is {code} after {computer.StepCount} steps.");
+
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();

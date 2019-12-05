@@ -107,7 +107,7 @@ namespace Core.Test
         [DataRow(9, 0)]
         public void CompareJump_1(int input, int expected)
         {
-            var computer = new IntCodeComputer(new int[] { 3, 3, 1108, -1, 8, 3, 4, 3, 9 });
+            var computer = new IntCodeComputer(new int[] { 3, 3, 1108, -1, 8, 3, 4, 3, 99 });
             computer.Inputs.Add(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
