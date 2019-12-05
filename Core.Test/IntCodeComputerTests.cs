@@ -66,6 +66,15 @@ namespace Core.Test
         }
 
         [TestMethod]
+        public void Program_5()
+        {
+            var computer = new IntCodeComputer(new int[] { 1101, 100, -1, 4, 0 });
+            computer.Run(5);
+            var expected = new int[] { 1101, 100, -1, 4, 99 };
+            CollectionAssert.AreEqual(expected, computer.Memory);
+        }
+
+        [TestMethod]
         public void LimitedExecution()
         {
             var computer = new IntCodeComputer(new int[] { 1, 1, 1, 4, 99, 5, 6, 0, 99 });
@@ -81,6 +90,27 @@ namespace Core.Test
             computer.Inputs.Add(37);
             computer.Run();
             Assert.AreEqual(37, computer.Outputs.First());
+        }
+
+        [TestMethod]
+        public void ImmediateParamWorks()
+        {
+            var computer = new IntCodeComputer(new int[] { 1002, 4, 3, 4, 33 });
+            computer.Run(2);
+            var expected = new int[] { 1002, 4, 3, 4, 99 };
+            CollectionAssert.AreEqual(expected, computer.Memory);
+        }
+
+        [DataTestMethod]
+        [DataRow(7, 0)]
+        [DataRow(8, 1)]
+        [DataRow(9, 0)]
+        public void CompareJump_1(int input, int expected)
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 3, 1108, -1, 8, 3, 4, 3, 9 });
+            computer.Inputs.Add(input);
+            computer.Run(10);
+            Assert.AreEqual(expected, computer.Outputs.First());
         }
     }
 }

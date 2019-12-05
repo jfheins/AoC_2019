@@ -18,9 +18,12 @@ namespace Day_05
             sw.Start();
 
             var computer = new IntCodeComputer(input);
-            computer.Memory[1] = 12;
-            computer.Memory[2] = 2;
+            computer.Inputs.Add(1);
 
+            computer.Run();
+            var code = computer.Outputs.Last();
+
+            Console.WriteLine($"Part 1: output is {code} after {computer.StepCount} steps.");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
