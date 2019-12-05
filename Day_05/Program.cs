@@ -12,11 +12,14 @@ namespace Day_05
     {
         static void Main()
         {
-            var input = File.ReadAllLines("../../../input.txt");
+            var input = File.ReadAllText("../../../input.txt").ParseInts();
 
             var sw = new Stopwatch();
             sw.Start();
 
+            var computer = new IntCodeComputer(input);
+            computer.Memory[1] = 12;
+            computer.Memory[2] = 2;
 
 
             sw.Stop();

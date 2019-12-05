@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Day_02.Test
+namespace Core.Test
 {
     [TestClass]
     public class IntCodeComputerTests
@@ -71,6 +72,15 @@ namespace Day_02.Test
             computer.Run(1);
             var expected = new int[] { 1, 1, 1, 4, 2, 5, 6, 0, 99 };
             CollectionAssert.AreEqual(expected, computer.Memory);
+        }
+
+        [TestMethod]
+        public void InputOutputWorks()
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 0, 4, 0, 99 });
+            computer.Inputs.Add(37);
+            computer.Run();
+            Assert.AreEqual(37, computer.Outputs.First());
         }
     }
 }

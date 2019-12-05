@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Day_02
+namespace Core
 {
     public class IntCodeComputer
     {
@@ -10,6 +10,9 @@ namespace Day_02
 
         public int InstructionPointer { get; private set; }
         public int StepCount { get; private set; }
+
+        public List<int> Inputs { get; } = new List<int>();
+        public List<int> Outputs { get; } = new List<int>();
 
         public IntCodeComputer(int[] initialState)
         {
@@ -44,6 +47,10 @@ namespace Day_02
                     case OpCode.Mul:
                         ExecuteInstruction((a, b) => a * b);
                         break;
+                    case OpCode.Load:
+                        break;
+                    case OpCode.Store:
+                        break;
                     case OpCode.Halt:
                         return;
                     default:
@@ -74,6 +81,8 @@ namespace Day_02
     {
         Add = 1,
         Mul = 2,
+        Load = 3,
+        Store = 4,
         Halt = 99
     }
 }
