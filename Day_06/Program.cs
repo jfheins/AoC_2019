@@ -20,16 +20,16 @@ namespace Day_06
             var orbitedby = items.ToLookup(x => x[0], x => x[1]);
             var orbits = items.ToDictionary(x => x[1], x => x[0]);
 
-            var searcher = new BreadthFirstSearch<string, int>(EqualityComparer<string>.Default,
-                node =>
-                {
-                    if (orbits.TryGetValue(node, out var parent))
-                        return orbitedby[node].Append(parent);
-                    else
-                        return orbitedby[node];
-                });
+            var search = new BreadthFirstSearch<string, int>(
+                EqualityComparer<string>.Default,
+                node => orbitedby[node].Concat(orbits.GetOrEmpty(node)))
+            { PerformParallelSearch = false };
 
-            var path = searcher.FindFirst("SAN", x => x == "YOU");
+            var depths = search.FindAll("COM", x => true);
+            var sum = depths.Sum(path => path.Length);
+            Console.WriteLine($"Part 1: The total number of orbits is {sum}.");
+
+            var path = search.FindFirst("SAN", x => x == "YOU");
             Console.WriteLine($"Part 2: The route von Santa to you has {path.Length - 2} transfers.");
 
             sw.Stop();
