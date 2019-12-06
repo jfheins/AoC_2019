@@ -4,7 +4,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using Core;
-using MoreLinq;
 
 namespace Day_06
 {
@@ -17,26 +16,21 @@ namespace Day_06
             var sw = new Stopwatch();
             sw.Start();
 
-            var items = input.Select(s => ValueTuple.Create(s.Split(')')[0], s.Split(')')[1]));
-            var groups = items.ToLookup(x => x.Item1);
+            var items = input.Select(s => s.Split(')'));
+            var orbitedby = items.ToLookup(x => x[0], x => x[1]);
+            var orbits = items.ToDictionary(x => x[1], x => x[0]);
 
-            var known = new Dictionary<string, int>() { { "COM", 0 } };
-            var todo = new List<string>() { "COM" };
-            while (todo.Count > 0)
-            {
-                var current = todo.First();
-                todo.RemoveAt(0);
-                var suborbits = groups[current];
-                foreach (var item in suborbits)
+            var searcher = new BreadthFirstSearch<string, int>(EqualityComparer<string>.Default,
+                node =>
                 {
-                    todo.Add(item.Item2);
-                    known.Add(item.Item2, known[current] + 1);
-                }
-            }
+                    if (orbits.TryGetValue(node, out var parent))
+                        return orbitedby[node].Append(parent);
+                    else
+                        return orbitedby[node];
+                });
 
-            var sum = known.Sum(lvp => lvp.Value);
-            Console.WriteLine(sum);
-
+            var path = searcher.FindFirst("SAN", x => x == "YOU");
+            Console.WriteLine($"Part 2: The route von Santa to you has {path.Length - 2} transfers.");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
