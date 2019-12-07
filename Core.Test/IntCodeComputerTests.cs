@@ -87,9 +87,34 @@ namespace Core.Test
         public void InputOutputWorks()
         {
             var computer = new IntCodeComputer(new int[] { 3, 0, 4, 0, 99 });
-            computer.Inputs.Add(37);
+            computer.Inputs.Enqueue(37);
             computer.Run();
             Assert.AreEqual(37, computer.Outputs.First());
+        }
+
+        [TestMethod]
+        public void InputOutputWorks_WithCall()
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 0, 4, 0, 99 });
+            var result = computer.RunWith(37);
+            Assert.AreEqual(37, result);
+        }
+
+        [DataTestMethod]
+        [DataRow(6, 999)]
+        [DataRow(7, 999)]
+        [DataRow(8, 1000)]
+        [DataRow(9, 1001)]
+        [DataRow(10, 1001)]
+        [DataRow(11, 1001)]
+        public void InputOutputWorks2(int input, int expected)
+        {
+            var computer = new IntCodeComputer(new int[] { 3, 21, 1008, 21, 8, 20, 1005, 20, 22,
+                107, 8, 21, 20, 1006,20, 31, 1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20,
+                1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99 });
+            computer.Inputs.Enqueue(input);
+            computer.Run();
+            Assert.AreEqual(expected, computer.Outputs.First());
         }
 
         [TestMethod]
@@ -109,7 +134,7 @@ namespace Core.Test
         public void CompareJump_1_equals_8(int input, int expected)
         {
             var computer = new IntCodeComputer(new int[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
-            computer.Inputs.Add(input);
+            computer.Inputs.Enqueue(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
         }
@@ -122,7 +147,7 @@ namespace Core.Test
         public void CompareJump_2_lessthan_8(int input, int expected)
         {
             var computer = new IntCodeComputer(new int[] { 3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8 });
-            computer.Inputs.Add(input);
+            computer.Inputs.Enqueue(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
         }
@@ -135,7 +160,7 @@ namespace Core.Test
         public void CompareJump_3_equal_8(int input, int expected)
         {
             var computer = new IntCodeComputer(new int[] { 3, 3, 1108, -1, 8, 3, 4, 3, 99 });
-            computer.Inputs.Add(input);
+            computer.Inputs.Enqueue(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
         }
@@ -148,7 +173,7 @@ namespace Core.Test
         public void CompareJump_4_lessthan_8(int input, int expected)
         {
             var computer = new IntCodeComputer(new int[] { 3, 3, 1107, -1, 8, 3, 4, 3, 99 });
-            computer.Inputs.Add(input);
+            computer.Inputs.Enqueue(input);
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
         }
