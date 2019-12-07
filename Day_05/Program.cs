@@ -18,14 +18,14 @@ namespace Day_05
             sw.Start();
 
             var computer = new IntCodeComputer(input);
-            computer.Inputs.Add(1);
+            computer.Inputs.Enqueue(1);
             computer.Run();
             var code = computer.Outputs.Last();
 
             Console.WriteLine($"Part 1: output is {code} after {computer.StepCount} steps.");
 
             computer = new IntCodeComputer(input);
-            computer.Inputs.Add(5);
+            computer.Inputs.Enqueue(5);
 
             computer.Run();
 
