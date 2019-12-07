@@ -14,12 +14,12 @@ namespace Day_07
         static void Main()
         {
             var input = File.ReadAllText("../../../input.txt").ParseInts();
-            //input = new int[] { 3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23, 99, 0, 0 };
+            // input = new int[] { 3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1, 28, 1005, 28, 6, 99, 0, 0, 5 };
 
             var sw = new Stopwatch();
             sw.Start();
 
-            var phases = new int[] { 0, 1, 2, 3, 4 };
+            var phases = new int[] { 5, 6, 7, 8, 9 };
             var phaseCombinations = new Permutations<int>(phases);
             var result = new Dictionary<int[], int>();
 
@@ -41,15 +41,23 @@ namespace Day_07
             Debug.Assert(phases.Count == 5);
             var output = 0;
 
-            for (var ampIndex = 0; ampIndex < 5; ampIndex++)
+            var computers = phases.Select(p => new IntCodeComputer(input, p)).ToList();
+
+            for (int i = 0; i < 1000; i++)
             {
-                var c = new IntCodeComputer(input);
-                c.Inputs.Add(phases[ampIndex]);
-                c.Inputs.Add(output);
-                c.Run();
-                output = c.Outputs.First();
+                for (var ampIndex = 0; ampIndex < 5; ampIndex++)
+                {
+                    computers[ampIndex].Inputs.Add(output);
+                    computers[ampIndex].Run(int.MaxValue, true);
+                    if (computers[ampIndex].CurrentInstruction != OpCode.Halt)
+                        output = computers[ampIndex].Outputs[i];
+                }
+                if (computers.Last().CurrentInstruction == OpCode.Halt)
+                {
+                    return output;
+                }
             }
-            return output;
+            throw new Exception(); // Program did not halt
         }
     }
 }
