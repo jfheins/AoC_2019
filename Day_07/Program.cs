@@ -23,28 +23,23 @@ namespace Day_07
 
             var phases = new int[] { 0, 1, 2, 3, 4 };
             var result = Exec(phases, TryPhaseSetting);
-            Console.WriteLine($"Part 1: Setting {string.Join(",", result.Key)} has end signal of { result.Value }");
+            Console.WriteLine($"Part 1: Setting {string.Join(",", result.phases)} has end signal of { result.value }");
 
             phases = new int[] { 5, 6, 7, 8, 9 };
             result = Exec(phases, TryPhaseSettingFeedback);
-            Console.WriteLine($"Part 2: Setting {string.Join(",", result.Key)} has end signal of { result.Value }");
+            Console.WriteLine($"Part 2: Setting {string.Join(",", result.phases)} has end signal of { result.value }");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        private static KeyValuePair<int[], int> Exec(int[] phases, Func<IList<int>, int> callback)
+        private static (int[] phases, int value) Exec(int[] phases, Func<IList<int>, int> callback)
         {
-            var phaseCombinations = new Permutations<int>(phases);
-            var result = new Dictionary<int[], int>();
-
-            foreach (IList<int> phasesetting in phaseCombinations)
-            {
-                result.Add(phasesetting.ToArray(), callback(phasesetting));
-            }
-
-            return result.MaxBy(kvp => kvp.Value).First();
+            return new Permutations<int>(phases)
+                .Select(combination => (phases: combination.ToArray(), value: callback(combination)))
+                .MaxBy(t => t.value)
+                .First();
         }
 
         static int TryPhaseSetting(IList<int> phases)
