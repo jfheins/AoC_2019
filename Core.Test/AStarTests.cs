@@ -106,7 +106,7 @@ namespace Core.Test
             }
         }
 
-        private float GrowHeuristic(int x) => 1000 - x;
+        private float GrowHeuristic(int x) => Math.Abs(1000 - x);
         private float ShrinkHeuristic(int x) => x;
 
 
