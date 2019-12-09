@@ -13,14 +13,20 @@ namespace Day_09
     {
         static void Main()
         {
-            var input = File.ReadAllText("../../../input.txt").ParseInts();
+            var input = File.ReadAllText("../../../input.txt").ParseLongs();
 
             var sw = new Stopwatch();
             sw.Start();
 
-            var c = new IntCodeComputer(input);
+            var c = new LongCodeComputer(input);
+            var result = c.RunWith(1);
 
-            Console.WriteLine($"Part 1: ");
+            Console.WriteLine($"Part 1: {result}");
+
+            c = new LongCodeComputer(input);
+            result = c.RunWith(2);
+
+            Console.WriteLine($"Part 2: {result}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
