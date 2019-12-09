@@ -13,10 +13,12 @@ namespace Day_09
     {
         static void Main()
         {
-            var input = File.ReadAllLines("../../../input.txt");
+            var input = File.ReadAllText("../../../input.txt").ParseInts();
 
             var sw = new Stopwatch();
             sw.Start();
+
+            var c = new IntCodeComputer(input);
 
             Console.WriteLine($"Part 1: ");
 

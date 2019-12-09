@@ -177,5 +177,24 @@ namespace Core.Test
             computer.Run(10);
             Assert.AreEqual(expected, computer.Outputs.First());
         }
+
+        // Can read bexond program bounds
+
+        [TestMethod]
+        public void TestRelativeBase()
+        {
+            var program = new int[] { 109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99 };
+            var computer = new IntCodeComputer(program);
+            computer.Run();
+            CollectionAssert.AreEqual(program, computer.Outputs);
+        }
+
+        //[TestMethod]
+        //public void TestLargeNumbers()
+        //{
+        //    var program = new long[] { 104, 1125899906842624, 99 };
+        //    var computer = new IntCodeComputer(program);
+        //    Assert.AreEqual(program[1], computer.Outputs.First());
+        //}
     }
 }
