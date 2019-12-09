@@ -27,6 +27,7 @@ namespace Day_09
             result = c.RunWith(2);
 
             Console.WriteLine($"Part 2: {result}");
+            Console.WriteLine($"After {c.StepCount} steps.");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
