@@ -33,52 +33,39 @@ namespace Day_10
             }
 
             var max = visibleAsteroids.MaxBy(x => x.Value).First();
-            Console.WriteLine($"Part 1: {max.Key} sees {max.Value}");
+            Console.WriteLine($"Part 1: {max.Key} sees {max.Value} asteroids.");
 
             var laserLocation = max.Key;
-            var targets = asteroids
+            var targetsWithAngle = asteroids
                 .ExceptFor(laserLocation)
-                .Select(o => (o, ToPolar(laserLocation, o)))
-                .OrderBy(t => t.Item2.angle)
-                .ThenBy(t => t.Item2.distance)
-                .ToLookup(x => x.Item2.angle, new DoubleComparer());
+                .Select(o => ToPolar(laserLocation, o))
+                .ToLookup(x => x.angle, new DoubleComparer());
 
-            var hits = new List<Point>();
-            for (int round = 0; round < 1000; round++)
-            {
-                var thisRound = targets
+            var targetsWithRound = targetsWithAngle
                     .SelectMany(group => group
-                    .OrderBy(x => x.Item2.distance)
-                    .Skip(round)
-                    .Take(1))
+                        .OrderBy(x => x.distance)
+                        .Select((x, idx) => (target: x.other, round: idx, x.angle)))
+                    .OrderBy(x => x.round)
+                    .ThenBy(x => x.angle)
                     .ToList();
-                foreach (var target in thisRound)
-                {
-                    hits.Add(target.o);
-                    Console.WriteLine($"{hits.Count} {target.o} @ {target.Item2.angle}");
-                }
-            }
 
-            Console.WriteLine($"coords: {hits[199]}");
+            Console.WriteLine($"200th target is at: {targetsWithRound[199].target}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        static double AngleBetween(Point a, Point b)
-        {
-            return Math.Atan2(b.Y - a.Y, b.X - a.X);
-        }
+        static double AngleBetween(Point a, Point b) => Math.Atan2(b.Y - a.Y, b.X - a.X);
 
-        static (double distance, double angle) ToPolar(Point a, Point b)
+        static (Point other, double distance, double angle) ToPolar(Point a, Point b)
         {
             var dx = b.X - a.X;
             var dy = b.Y - a.Y;
             var angle = Math.Atan2(-dy, dx);
             angle = (Math.PI / 2) - angle;
-            angle = (angle + 2 * Math.PI) % (2 * Math.PI);
-            return (dx * dx + dy * dy, angle);
+            angle = (angle + (2 * Math.PI)) % (2 * Math.PI);
+            return (b, (dx * dx) + (dy * dy), angle);
         }
     }
 
@@ -90,9 +77,9 @@ namespace Day_10
         public static bool NearlyEqual(double a, double b, double epsilon)
         {
             const double MinNormal = 2.2250738585072014E-308d;
-            double absA = Math.Abs(a);
-            double absB = Math.Abs(b);
-            double diff = Math.Abs(a - b);
+            var absA = Math.Abs(a);
+            var absB = Math.Abs(b);
+            var diff = Math.Abs(a - b);
 
             if (a.Equals(b))
             { // shortcut, handles infinities
