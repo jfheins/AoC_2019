@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Day_09", "Day_09\Day_09.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Day_10", "Day_10\Day_10.csproj", "{BAEC530F-3ABB-411D-B29F-2B3950964168}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Day_11", "Day_11\Day_11.csproj", "{214F3485-95E6-4C95-A2DC-3CB85FFD8836}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,10 +73,17 @@ Global
 		{052CF986-0205-4A7C-8899-94C11AF915DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{052CF986-0205-4A7C-8899-94C11AF915DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{052CF986-0205-4A7C-8899-94C11AF915DC}.Release|Any CPU.Build.0 = Release|Any CPU
+<<<<<<< Updated upstream
 		{BAEC530F-3ABB-411D-B29F-2B3950964168}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BAEC530F-3ABB-411D-B29F-2B3950964168}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BAEC530F-3ABB-411D-B29F-2B3950964168}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BAEC530F-3ABB-411D-B29F-2B3950964168}.Release|Any CPU.Build.0 = Release|Any CPU
+=======
+		{214F3485-95E6-4C95-A2DC-3CB85FFD8836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{214F3485-95E6-4C95-A2DC-3CB85FFD8836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{214F3485-95E6-4C95-A2DC-3CB85FFD8836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{214F3485-95E6-4C95-A2DC-3CB85FFD8836}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> Stashed changes
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
