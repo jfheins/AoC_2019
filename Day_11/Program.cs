@@ -12,6 +12,8 @@ namespace Day_11
 {
     class Program
     {
+        private enum HullColor { Black, White };
+
         private static readonly Dictionary<Direction, Size> _mapDirectionToSize = new Dictionary<Direction, Size>
         {
             {Direction.Left, new Size(-1, 0)},
@@ -35,56 +37,17 @@ namespace Day_11
             var sw = new Stopwatch();
             sw.Start();
 
-            var panels = new Dictionary<Point, char>();
-            var c = new LongCodeComputer(input);
-            var position = new Point();
-            var heading = Direction.Up;
-
-            while (c.CurrentOpcode != LongCodeComputer.OpCode.Halt)
-            {
-                var currentPanel = panels.GetValueOrDefault(position, '.');
-                var colorToPaint = c.RunWith(currentPanel == '█' ? 1 : 0, 2);
-                if (colorToPaint == null)
-                {
-                    break;
-                }
-                panels[position] = colorToPaint.Value == 1 ? '█' : '.';
-                heading = Turn(heading, c.Outputs.Dequeue());
-                position += _mapDirectionToSize[heading];
-            }
-
+            var panels = PaintHull(input);
             Console.WriteLine($"Part 1: {panels.Count}");
 
-            panels = new Dictionary<Point, char>();
-            c = new LongCodeComputer(input);
-            position = new Point();
-            heading = Direction.Up;
-            panels[Point.Empty] = '█';
+            panels = PaintHull(input, HullColor.White);
 
-            while (c.CurrentOpcode != LongCodeComputer.OpCode.Halt)
+            foreach (var row in panels.Keys.PointsInBoundingRect())
             {
-                var currentPanel = panels.GetValueOrDefault(position, '.');
-                var colorToPaint = c.RunWith(currentPanel == '█' ? 1 : 0, 2);
-                if (colorToPaint == null)
+                foreach (var point in row)
                 {
-                    break;
-                }
-                panels[position] = colorToPaint.Value == 1 ? '█' : ' ';
-                heading = Turn(heading, c.Outputs.Dequeue());
-                position += _mapDirectionToSize[heading];
-            }
-
-            var minx = panels.Keys.Min(p => p.X);
-            var maxx = panels.Keys.Max(p => p.X);
-            var miny = panels.Keys.Min(p => p.Y);
-            var maxy = panels.Keys.Max(p => p.Y);
-
-            for (int y = miny; y <= maxy; y++)
-            {
-                for (int x = minx; x <= maxx; x++)
-                {
-                    var pixel = panels.GetValueOrDefault(new Point(x, y), ' ');
-                    Console.Write(pixel);
+                    var pixel = panels.GetValueOrDefault(point, HullColor.Black);
+                    Console.Write(pixel == HullColor.Black ? ' ' : '█');
                 }
                 Console.WriteLine();
             }
@@ -93,6 +56,31 @@ namespace Day_11
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
+        }
+
+        private static Dictionary<Point, HullColor> PaintHull(long[] input, HullColor? initial = null)
+        {
+            var panels = new Dictionary<Point, HullColor>();
+            var c = new LongCodeComputer(input);
+            var position = new Point();
+            var heading = Direction.Up;
+
+            if (initial.HasValue)
+                panels[Point.Empty] = initial.Value;
+
+            while (c.CurrentOpcode != LongCodeComputer.OpCode.Halt)
+            {
+                var currentPanel = panels.GetValueOrDefault(position, HullColor.Black);
+                var colorToPaint = c.RunWith((long)currentPanel, 2);
+                if (colorToPaint == null)
+                {
+                    break;
+                }
+                panels[position] = (HullColor)colorToPaint.Value;
+                heading = Turn(heading, c.Outputs.Dequeue());
+                position += _mapDirectionToSize[heading];
+            }
+            return panels;
         }
 
         private static Direction Turn(Direction heading, long turnDirection)
