@@ -14,22 +14,6 @@ namespace Day_11
     {
         private enum HullColor { Black, White };
 
-        private static readonly Dictionary<Direction, Size> _mapDirectionToSize = new Dictionary<Direction, Size>
-        {
-            {Direction.Left, new Size(-1, 0)},
-            {Direction.Up, new Size(0, -1)},
-            {Direction.Right, new Size(1, 0)},
-            {Direction.Down, new Size(0, 1)}
-        };
-
-        public enum Direction
-        {
-            Left,
-            Up,
-            Right,
-            Down
-        }
-
         static void Main()
         {
             var input = File.ReadAllText("../../../input.txt").ParseLongs();
@@ -42,6 +26,7 @@ namespace Day_11
 
             panels = PaintHull(input, HullColor.White);
 
+            Console.WriteLine();
             foreach (var row in panels.Keys.PointsInBoundingRect())
             {
                 foreach (var point in row)
@@ -68,30 +53,20 @@ namespace Day_11
             if (initial.HasValue)
                 panels[Point.Empty] = initial.Value;
 
-            while (c.CurrentOpcode != LongCodeComputer.OpCode.Halt)
+            while (true)
             {
                 var currentPanel = panels.GetValueOrDefault(position, HullColor.Black);
                 var colorToPaint = c.RunWith((long)currentPanel, 2);
                 if (colorToPaint == null)
-                {
                     break;
-                }
+
                 panels[position] = (HullColor)colorToPaint.Value;
-                heading = Turn(heading, c.Outputs.Dequeue());
-                position += _mapDirectionToSize[heading];
+                heading = c.Outputs.Dequeue() == 0
+                    ? heading.TurnCounterClockwise()
+                    : heading.TurnClockwise();
+                position = position.MoveTo(heading);
             }
             return panels;
-        }
-
-        private static Direction Turn(Direction heading, long turnDirection)
-        {
-            if (turnDirection == 0) // left            
-                heading -= 1;
-
-            else
-                heading += 1;
-
-            return (Direction)(((int)heading + 4) % 4);
         }
     }
 }
