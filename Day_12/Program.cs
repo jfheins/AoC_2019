@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using Core;
 using Core.Combinatorics;
 using MoreLinq;
@@ -22,13 +23,14 @@ namespace Day_12
             var bodies = input.Select(s => new Body(Point3.FromArray(s.ParseInts(3)))).ToList();
             var states = new List<int[]>();
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 1000000; i++)
             {
                 Step(bodies);
-                foreach (var b in bodies)
-                {
-                    b.SaveState(i);
-                }
+                _ = Parallel.ForEach(bodies, b => b.SaveState(i));
+                //foreach (var b in bodies)
+                //    b.SaveState(i);
+
+
                 if (bodies.All(b => b.IsPeriodic))
                 {
                     Console.WriteLine("All periodic");
@@ -40,8 +42,12 @@ namespace Day_12
                     break;
                 }
             }
-
             Console.WriteLine($"Part 1: {CalculateEnergy(bodies)}");
+
+            var bodiesGkv = bodies.Aggregate(1UL, (gkv, b) => determineLCM(b.Period, gkv));
+
+            Console.WriteLine($"Part 2: Period = {bodiesGkv}");
+            Console.WriteLine($"Should: Period = 4686774924");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
@@ -49,6 +55,33 @@ namespace Day_12
         }
 
         private static object CalculateEnergy(List<Body> bodies) => bodies.Sum(b => b.Energy);
+
+
+
+        private static ulong determineLCM(ulong a, ulong b)
+        {
+            ulong num1, num2;
+            if (a > b)
+            {
+                num1 = a;
+                num2 = b;
+            }
+            else
+            {
+                num1 = b;
+                num2 = a;
+            }
+
+            for (ulong i = 1; i < num2; i++)
+            {
+                if ((num1 * i) % num2 == 0)
+                {
+                    return i * num1;
+                }
+            }
+            return num1 * num2;
+        }
+
 
         static void Step(ICollection<Body> bodies)
         {
@@ -80,20 +113,65 @@ namespace Day_12
         }
     }
 
+    struct PeriodicCollection
+    {
+        public List<int> History;
+        public HashSet<(int, int, int)> Items;
+        public ulong Period;
+
+        private int last;
+        private int secondlast;
+
+        public PeriodicCollection(ulong x)
+        {
+            History = new List<int>();
+            Items = new HashSet<(int, int, int)>();
+            Period = x;
+            last = secondlast = 0;
+        }
+
+        public void Add(int v)
+        {
+            if (Period > 0)
+                return;
+
+            const int wndSize = 2000;
+            var currenttuple = (secondlast, last, v);
+
+            if (Items.Contains(currenttuple) && History.Count > wndSize)
+            {
+                // Possibly periodic
+                var search = History.GetRange(History.Count - wndSize, wndSize);
+                var foundIndicies = History.StartingIndex(search);
+                var canidate = foundIndicies.OrderByDescending(x => x).Skip(1).FirstOrDefault();
+                if (canidate > 0 && canidate < History.Count - wndSize)
+                {
+                    Period = (ulong)(History.Count - canidate - wndSize);
+                }
+            }
+
+            History.Add(v);
+
+            if (History.Count > 3)
+                _ = Items.Add(currenttuple);
+
+            secondlast = last;
+            last = v;
+        }
+    }
+
     class Body
     {
         public Point3 Position;
         public Vector3 Velocity = Vector3.Zero;
 
-        public List<Point3> PositionHistory = new List<Point3>();
-        public List<Vector3> VelHist = new List<Vector3>();
+        public PeriodicCollection x = new PeriodicCollection(0);
+        public PeriodicCollection y = new PeriodicCollection(0);
+        public PeriodicCollection z = new PeriodicCollection(0);
 
-        public HashSet<Point3> PastPos = new HashSet<Point3>();
-        public HashSet<Vector3> PastVel = new HashSet<Vector3>();
+        public ulong Period => determineLCM(determineLCM(x.Period, y.Period), z.Period);
 
-        public int Period = 0;
-
-        public bool IsPeriodic => Period > 0;
+        public bool IsPeriodic => x.Period > 0 && y.Period > 0 && z.Period > 0;
 
         public Body(Point3 point3)
         {
@@ -105,26 +183,34 @@ namespace Day_12
             if (IsPeriodic)
                 return;
 
-            if (PastPos.Contains(Position))
-            {
-                if (PastPos.Contains(PositionHistory[PositionHistory.Count - 1])
-                    && PastPos.Contains(PositionHistory[PositionHistory.Count - 2]))
-                {
+            x.Add(Position.X);
+            y.Add(Position.Y);
+            z.Add(Position.Z);
+        }
 
-                    // Possibly periodic
-                    var search = PositionHistory.GetRange(PositionHistory.Count - 10, 10);
-                    var first = PositionHistory.StartingIndex(search).First();
-                    if (first < PositionHistory.Count - 10)
-                    {
-                        Period = PositionHistory.Count - first - 10;
-                    }
-                }
+
+        private static ulong determineLCM(ulong a, ulong b)
+        {
+            ulong num1, num2;
+            if (a > b)
+            {
+                num1 = a;
+                num2 = b;
+            }
+            else
+            {
+                num1 = b;
+                num2 = a;
             }
 
-            PositionHistory.Add(Position);
-            PastPos.Add(Position);
-            //VelHist.Add(Velocity);
-            //PastVel.Add(Velocity);
+            for (ulong i = 1; i < num2; i++)
+            {
+                if ((num1 * i) % num2 == 0)
+                {
+                    return i * num1;
+                }
+            }
+            return num1 * num2;
         }
 
         public int Energy => (Math.Abs(Position.X) + Math.Abs(Position.Y) + Math.Abs(Position.Z))
