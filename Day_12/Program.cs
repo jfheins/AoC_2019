@@ -21,7 +21,7 @@ namespace Day_12
 
             var bodies = input.Select(s => new Body(Point3.FromArray(s.ParseInts(3)))).ToList();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 Step(bodies);
             }
@@ -77,5 +77,7 @@ namespace Day_12
 
         public int Energy => (Math.Abs(Position.X) + Math.Abs(Position.Y) + Math.Abs(Position.Z))
             * (Math.Abs((int)Velocity.X) + Math.Abs((int)Velocity.Y) + Math.Abs((int)Velocity.Z));
+
+        public override string ToString() => $"pos={Position}, vel={Velocity}";
     }
 }
