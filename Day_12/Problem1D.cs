@@ -11,24 +11,18 @@ namespace Day_12
         public Vector128<int> Velocities;
 
 
-        private new Vector128<int>[] referenceArray;
-        private new Vector128<int>[] window;
+        private new Vector128<int> referencePos;
+        private new Vector128<int> referenceVel;
 
         public Problem1D(Vector128<int> positions)
         {
             Positions = positions;
         }
 
-        public void Init(int windowSize)
+        public void Init()
         {
-            referenceArray = new Vector128<int>[windowSize];
-            window = new Vector128<int>[windowSize];
-
-            for (int i = 0; i < windowSize; i++)
-            {
-                Step();
-                referenceArray[i] = Positions;
-            }
+            referencePos = Positions;
+            referenceVel = Velocities;
         }
 
         public int Solve()
@@ -37,10 +31,8 @@ namespace Day_12
             while (true)
             {
                 stepCount++;
-                Array.Copy(window, 1, window, 0, window.Length - 1);
                 Step();
-                window[^1] = Positions;
-                if (ArrayEquals(referenceArray, window))
+                if (Positions.Equals(referencePos) && Velocities.Equals(referenceVel))
                 {
                     return stepCount;
                 }
@@ -66,19 +58,6 @@ namespace Day_12
 
             Velocities = Sse2.Add(Velocities, adds);
             Positions = Sse2.Add(Positions, Velocities);
-        }
-
-        private bool ArrayEquals<T>(T[] fa, T[] sa)
-        {
-            var cmp = EqualityComparer<T>.Default;
-
-            for (int j1 = 0; j1 < fa.Length; ++j1)
-            {
-                if (!cmp.Equals(fa[j1], sa[j1]))
-                    return false;
-            }
-
-            return true;
         }
     }
 }
