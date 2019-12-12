@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 using Core;
 using Core.Combinatorics;
@@ -11,6 +13,12 @@ using MoreLinq;
 
 namespace Day_12
 {
+    struct Problem1D
+    {
+        public Vector128<int> Positions;
+        public Vector128<int> Velocities;
+    }
+
     class Program
     {
         static void Main()
@@ -20,31 +28,96 @@ namespace Day_12
             var sw = new Stopwatch();
             sw.Start();
 
-            var bodies = input.Select(s => new Body(Point3.FromArray(s.ParseInts(3)))).ToList();
-            var states = new List<int[]>();
+            var coords = input.Select(s => Point3.FromArray(s.ParseInts(3))).ToList();
+            var bodies = coords.Select(c => new Body(c)).ToList();
+
+            var problems = new Problem1D[3];
+            var periods = new int[3];
+            var stepCount = 0;
+
+            const int wndSize = 16;
+            var referenceX = new Vector128<int>[wndSize];
+            var referenceY = new Vector128<int>[wndSize];
+            var referenceZ = new Vector128<int>[wndSize];
+
+            var windowX = new Vector128<int>[wndSize];
+            var windowY = new Vector128<int>[wndSize];
+            var windowZ = new Vector128<int>[wndSize];
+
+            problems[0].Positions = Vector128.Create(coords[0].X, coords[1].X, coords[2].X, coords[3].X);
+            problems[1].Positions = Vector128.Create(coords[0].Y, coords[1].Y, coords[2].Y, coords[3].Y);
+            problems[2].Positions = Vector128.Create(coords[0].Z, coords[1].Z, coords[2].Z, coords[3].Z);
+
+            bool ArrayEquals<T>(T[] fa, T[] sa)
+            {
+                var cmp = EqualityComparer<T>.Default;
+
+                for (int j1 = 0; j1 < fa.Length; ++j1)
+                    if (!cmp.Equals(fa[j1], sa[j1]))
+                        return false;
+                return true;
+            }
+
+            // Initial Window
+            for (int i = 0; i < wndSize; i++)
+            {
+                Step(ref problems[0]);
+                Step(ref problems[1]);
+                Step(ref problems[2]);
+
+                referenceX[i] = problems[0].Positions;
+                referenceY[i] = problems[1].Positions;
+                referenceZ[i] = problems[2].Positions;
+
+                windowX[i] = problems[0].Positions;
+            }
 
             for (int i = 0; i < 1000000; i++)
             {
-                Step(bodies);
-                _ = Parallel.ForEach(bodies, b => b.SaveState(i));
-                //foreach (var b in bodies)
-                //    b.SaveState(i);
-
-
-                if (bodies.All(b => b.IsPeriodic))
+                if (periods[0] == 0)
                 {
-                    Console.WriteLine("All periodic");
-                    foreach (var b in bodies)
+                    Array.Copy(windowX, 1, windowX, 0, wndSize - 1);
+                    Step(ref problems[0]);
+                    windowX[wndSize - 1] = problems[0].Positions;
+                    if (ArrayEquals(referenceX, windowX))
                     {
-                        Console.WriteLine($"Period: {b.Period}");
+                        periods[0] = stepCount;
                     }
-
-                    break;
                 }
-            }
-            Console.WriteLine($"Part 1: {CalculateEnergy(bodies)}");
 
-            var bodiesGkv = bodies.Aggregate(1UL, (gkv, b) => determineLCM(b.Period, gkv));
+
+                if (periods[1] == 0)
+                {
+                    Step(ref problems[1]);
+                    Array.Copy(windowY, 1, windowY, 0, wndSize - 1);
+                    windowY[wndSize - 1] = problems[1].Positions;
+                    if (ArrayEquals(referenceY, windowY))
+                    {
+                        periods[1] = stepCount;
+                    }
+                }
+
+
+                if (periods[2] == 0)
+                {
+                    Step(ref problems[2]);
+                    Array.Copy(windowZ, 1, windowZ, 0, wndSize - 1);
+                    windowZ[wndSize - 1] = problems[2].Positions;
+                    if (ArrayEquals(referenceZ, windowZ))
+                    {
+                        periods[2] = stepCount;
+                    }
+                }
+
+                stepCount++;
+            }
+            //Console.WriteLine($"Part 1: {CalculateEnergy(bodies)}");
+
+            Console.WriteLine($"Part 2: Period X = {periods[0]}");
+            Console.WriteLine($"Part 2: Period Y = {periods[1]}");
+            Console.WriteLine($"Part 2: Period Z = {periods[2]}");
+
+            var bodiesGkv = periods.Aggregate(1UL, (gkv, b) => determineLCM((ulong)b, gkv));
 
             Console.WriteLine($"Part 2: Period = {bodiesGkv}");
             Console.WriteLine($"Should: Period = 4686774924");
@@ -52,6 +125,28 @@ namespace Day_12
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
+        }
+
+        private static void Step(ref Problem1D p)
+        {
+            var shifted1 = Sse2.Shuffle(p.Positions, 0b10010011);
+            var shifted2 = Sse2.Shuffle(p.Positions, 0b01001110);
+            var shifted3 = Sse2.Shuffle(p.Positions, 0b00111001);
+
+            // Calculate velocity additions
+            var adds = Sse2.CompareGreaterThan(p.Positions, shifted1);
+            adds = Sse2.Add(adds, Sse2.CompareGreaterThan(p.Positions, shifted2));
+            adds = Sse2.Add(adds, Sse2.CompareGreaterThan(p.Positions, shifted3));
+
+            // Calculate velocity subtractions
+            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted1));
+            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted2));
+            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted3));
+
+            // Add to velocity
+            p.Velocities = Sse2.Add(p.Velocities, adds);
+            // Add to pos
+            p.Positions = Sse2.Add(p.Positions, p.Velocities);
         }
 
         private static object CalculateEnergy(List<Body> bodies) => bodies.Sum(b => b.Energy);
@@ -140,6 +235,7 @@ namespace Day_12
 
             if (Items.Contains(currenttuple) && History.Count > wndSize)
             {
+                Console.WriteLine("Possible");
                 // Possibly periodic
                 var search = History.GetRange(History.Count - wndSize, wndSize);
                 var foundIndicies = History.StartingIndex(search);
@@ -147,6 +243,7 @@ namespace Day_12
                 if (canidate > 0 && canidate < History.Count - wndSize)
                 {
                     Period = (ulong)(History.Count - canidate - wndSize);
+                    Console.WriteLine($"Period found between {canidate} and {History.Count - wndSize}");
                 }
             }
 
