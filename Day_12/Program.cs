@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 using Core;
 using Core.Combinatorics;
@@ -13,104 +12,31 @@ using MoreLinq;
 
 namespace Day_12
 {
-    struct Problem1D
-    {
-        public Vector128<int> Positions;
-        public Vector128<int> Velocities;
-    }
 
     class Program
     {
         static void Main()
         {
             var input = File.ReadAllLines("../../../input.txt");
+            var coords = input.Select(s => Point3.FromArray(s.ParseInts(3))).ToList();
 
             var sw = new Stopwatch();
             sw.Start();
 
-            var coords = input.Select(s => Point3.FromArray(s.ParseInts(3))).ToList();
-            var bodies = coords.Select(c => new Body(c)).ToList();
-
             var problems = new Problem1D[3];
-            var periods = new int[3];
-            var stepCount = 0;
+            problems[0] = new Problem1D(Vector128.Create(coords[0].X, coords[1].X, coords[2].X, coords[3].X));
+            problems[1] = new Problem1D(Vector128.Create(coords[0].Y, coords[1].Y, coords[2].Y, coords[3].Y));
+            problems[2] = new Problem1D(Vector128.Create(coords[0].Z, coords[1].Z, coords[2].Z, coords[3].Z));
 
-            const int wndSize = 16;
-            var referenceX = new Vector128<int>[wndSize];
-            var referenceY = new Vector128<int>[wndSize];
-            var referenceZ = new Vector128<int>[wndSize];
+            const int wndSize = 12;
 
-            var windowX = new Vector128<int>[wndSize];
-            var windowY = new Vector128<int>[wndSize];
-            var windowZ = new Vector128<int>[wndSize];
-
-            problems[0].Positions = Vector128.Create(coords[0].X, coords[1].X, coords[2].X, coords[3].X);
-            problems[1].Positions = Vector128.Create(coords[0].Y, coords[1].Y, coords[2].Y, coords[3].Y);
-            problems[2].Positions = Vector128.Create(coords[0].Z, coords[1].Z, coords[2].Z, coords[3].Z);
-
-            bool ArrayEquals<T>(T[] fa, T[] sa)
+            foreach (var p in problems)
             {
-                var cmp = EqualityComparer<T>.Default;
-
-                for (int j1 = 0; j1 < fa.Length; ++j1)
-                    if (!cmp.Equals(fa[j1], sa[j1]))
-                        return false;
-                return true;
+                p.Init(wndSize);
             }
 
-            // Initial Window
-            for (int i = 0; i < wndSize; i++)
-            {
-                Step(ref problems[0]);
-                Step(ref problems[1]);
-                Step(ref problems[2]);
+            var periods = problems.Select(p => p.Solve()).ToList();
 
-                referenceX[i] = problems[0].Positions;
-                referenceY[i] = problems[1].Positions;
-                referenceZ[i] = problems[2].Positions;
-
-                windowX[i] = problems[0].Positions;
-            }
-
-            for (int i = 0; i < 1000000; i++)
-            {
-                if (periods[0] == 0)
-                {
-                    Array.Copy(windowX, 1, windowX, 0, wndSize - 1);
-                    Step(ref problems[0]);
-                    windowX[wndSize - 1] = problems[0].Positions;
-                    if (ArrayEquals(referenceX, windowX))
-                    {
-                        periods[0] = stepCount;
-                    }
-                }
-
-
-                if (periods[1] == 0)
-                {
-                    Step(ref problems[1]);
-                    Array.Copy(windowY, 1, windowY, 0, wndSize - 1);
-                    windowY[wndSize - 1] = problems[1].Positions;
-                    if (ArrayEquals(referenceY, windowY))
-                    {
-                        periods[1] = stepCount;
-                    }
-                }
-
-
-                if (periods[2] == 0)
-                {
-                    Step(ref problems[2]);
-                    Array.Copy(windowZ, 1, windowZ, 0, wndSize - 1);
-                    windowZ[wndSize - 1] = problems[2].Positions;
-                    if (ArrayEquals(referenceZ, windowZ))
-                    {
-                        periods[2] = stepCount;
-                    }
-                }
-
-                stepCount++;
-            }
             //Console.WriteLine($"Part 1: {CalculateEnergy(bodies)}");
 
             Console.WriteLine($"Part 2: Period X = {periods[0]}");
@@ -127,27 +53,6 @@ namespace Day_12
             _ = Console.ReadLine();
         }
 
-        private static void Step(ref Problem1D p)
-        {
-            var shifted1 = Sse2.Shuffle(p.Positions, 0b10010011);
-            var shifted2 = Sse2.Shuffle(p.Positions, 0b01001110);
-            var shifted3 = Sse2.Shuffle(p.Positions, 0b00111001);
-
-            // Calculate velocity additions
-            var adds = Sse2.CompareGreaterThan(p.Positions, shifted1);
-            adds = Sse2.Add(adds, Sse2.CompareGreaterThan(p.Positions, shifted2));
-            adds = Sse2.Add(adds, Sse2.CompareGreaterThan(p.Positions, shifted3));
-
-            // Calculate velocity subtractions
-            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted1));
-            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted2));
-            adds = Sse2.Subtract(adds, Sse2.CompareLessThan(p.Positions, shifted3));
-
-            // Add to velocity
-            p.Velocities = Sse2.Add(p.Velocities, adds);
-            // Add to pos
-            p.Positions = Sse2.Add(p.Positions, p.Velocities);
-        }
 
         private static object CalculateEnergy(List<Body> bodies) => bodies.Sum(b => b.Energy);
 
