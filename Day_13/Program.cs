@@ -61,6 +61,7 @@ namespace Day_13
                 AddTiles(c.Outputs);
                 PaintGame();
                 var key = Console.ReadKey();
+
                 var nextmove = key.KeyChar - '0' - 2;
                 if (nextmove > 1 || nextmove < -1)
                     break;
@@ -68,13 +69,17 @@ namespace Day_13
                 allMoves.Add(nextmove);
             } while (c.RunUntilInputRequired());
 
+            // Last Paint
+
+            AddTiles(c.Outputs);
+            PaintGame();
 
             //sw.Stop();
             //Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
-            Console.Clear();
-            Console.WriteLine("Game over");
+            //Console.Clear();
+            //Console.WriteLine("Game over");
 
-            File.WriteAllText(@"../../../moves.txt", string.Join(',', allMoves));
+            //File.WriteAllText(@"../../../moves.txt", string.Join(',', allMoves));
             Console.WriteLine("Moves saved.");
 
             _ = Console.ReadLine();
@@ -93,7 +98,6 @@ namespace Day_13
 
         private static void PaintGame()
         {
-            Console.Clear();
             foreach (var tile in tiles)
             {
                 if (tile.Key.X < 0)
