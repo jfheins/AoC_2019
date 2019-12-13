@@ -12,7 +12,9 @@ namespace Day_13
     class Program
     {
         static int score = 0;
-        static Dictionary<Point, int> tiles;
+        static Dictionary<Point, int> tiles = new Dictionary<Point, int>();
+        static int paddlePosition = 0;
+        static int ballPosition = 0;
 
         static IEnumerable<(int x, int y, int tile)> ToTiles(IEnumerable<long> o) => o.Select(x => (int)x).Triplewise();
 
@@ -26,61 +28,34 @@ namespace Day_13
             var c = new LongCodeComputer(input);
             c.Store(0, 2);
             _ = c.RunUntilInputRequired();
-            tiles = ToTiles(c.Outputs)
-                .ToDictionary(t => new Point(t.x, t.y), x => x.tile);
 
-            c.Outputs.Clear();
+            AddTiles(c.Outputs);
 
             var blockCount = tiles.Count(x => x.Value == 2);
             Console.WriteLine($"Part 1: {blockCount}");
-            //_ = Console.ReadLine();
-
+            _ = Console.ReadLine();
 
             var width = 42;
             var height = 22;
             Console.BufferWidth = Math.Max(width, Console.BufferWidth);
             Console.BufferHeight = Math.Max(height + 10, Console.BufferHeight);
 
-            var allMoves = new List<int>();
-            var maxScore = 0;
-            if (File.Exists(@"../../../moves.txt"))
-            {
-                allMoves.AddRange(File.ReadAllText(@"../../../moves.txt").ParseInts());
-
-                foreach (var move in allMoves)
-                    c.Inputs.Enqueue(move);
-
-                _ = c.RunUntilInputRequired();
-                AddTiles(c.Outputs);
-                maxScore = tiles[new Point(-1, 0)];
-            }
-
+            var frameCounter = 0;
 
             do
             {
                 AddTiles(c.Outputs);
-                PaintGame();
-                var key = Console.ReadKey();
+                if (frameCounter++ % 10 == 0)
+                    PaintGame();
 
-                var nextmove = key.KeyChar - '0' - 2;
-                if (nextmove > 1 || nextmove < -1)
-                    break;
-                c.Inputs.Enqueue(nextmove);
-                allMoves.Add(nextmove);
+                var relPos = Math.Sign(ballPosition.CompareTo(paddlePosition));
+                c.Inputs.Enqueue(relPos);
             } while (c.RunUntilInputRequired());
 
             // Last Paint
 
             AddTiles(c.Outputs);
             PaintGame();
-
-            //sw.Stop();
-            //Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
-            //Console.Clear();
-            //Console.WriteLine("Game over");
-
-            //File.WriteAllText(@"../../../moves.txt", string.Join(',', allMoves));
-            Console.WriteLine("Moves saved.");
 
             _ = Console.ReadLine();
         }
@@ -91,26 +66,36 @@ namespace Day_13
         private static void AddTiles(Queue<long> computerOutput)
         {
             foreach (var (x, y, value) in ToTiles(computerOutput))
+            {
                 tiles[new Point(x, y)] = value;
-
+            }
             computerOutput.Clear();
+
+            foreach (var obj in tiles)
+            {
+                if (obj.Value == 4)
+                    ballPosition = obj.Key.X;
+                if (obj.Value == 3)
+                    paddlePosition = obj.Key.X;
+            }
+            score = tiles[new Point(-1, 0)];
         }
 
         private static void PaintGame()
         {
-            foreach (var tile in tiles)
+            Console.SetCursorPosition(0, 0);
+            for (int y = 0; y < 22; y++)
             {
-                if (tile.Key.X < 0)
+                var line = new char[43];
+                for (int x = 0; x < 43; x++)
                 {
-                    Console.Title = $"Score: {tile.Value}";
+                    var p = new Point(x, y);
+                    var tile = tiles.GetValueOrDefault(p, 0);
+                    line[x] = _mapTileIfToChar[tile];
                 }
-                else
-                {
-                    Console.SetCursorPosition(tile.Key.X, tile.Key.Y);
-                    Console.Write(_mapTileIfToChar[tile.Value]);
-                }
+                Console.WriteLine(line);
             }
-            Console.SetCursorPosition(0, 23);
+            Console.Title = $"Score: {score}";
         }
     }
 }
