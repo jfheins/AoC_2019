@@ -13,12 +13,18 @@ namespace Day_13
     {
         static void Main()
         {
-            var input = File.ReadAllLines("../../../input.txt");
+            var input = File.ReadAllText("../../../input.txt").ParseLongs();
 
             var sw = new Stopwatch();
             sw.Start();
 
-            Console.WriteLine($"Part 1: ");
+            var c = new LongCodeComputer(input);
+
+            c.Run();
+
+            var blocks = c.Outputs.Chunks(3).Count(x => x.ElementAt(2) == 2);
+
+            Console.WriteLine($"Part 1: {blocks}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
