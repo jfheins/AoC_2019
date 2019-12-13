@@ -45,7 +45,7 @@ namespace Day_13
             do
             {
                 AddTiles(c.Outputs);
-                if (frameCounter++ % 10 == 0)
+                if (frameCounter++ % 1 == 0)
                     PaintGame();
 
                 var relPos = Math.Sign(ballPosition.CompareTo(paddlePosition));
@@ -53,7 +53,6 @@ namespace Day_13
             } while (c.RunUntilInputRequired());
 
             // Last Paint
-
             AddTiles(c.Outputs);
             PaintGame();
 
@@ -61,7 +60,7 @@ namespace Day_13
         }
 
         private static Dictionary<int, char> _mapTileIfToChar = new Dictionary<int, char> {
-            {0, ' '},{ 1, 'M'},{ 2, '#'},{ 3, '='},{ 4, 'o'} };
+            {0, ' '},{ 1, '█'},{ 2, '#'},{ 3, '_'},{ 4, 'o'} };
 
         private static void AddTiles(Queue<long> computerOutput)
         {
