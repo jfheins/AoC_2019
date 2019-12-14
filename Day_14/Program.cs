@@ -31,76 +31,43 @@ namespace Day_14
 
         static void Main()
         {
-            var input = File.ReadAllLines("../../../input.txt");
-
             var sw = new Stopwatch();
             sw.Start();
 
-            Func<Match, IEnumerable<string>> MatchToGroups = m => (m.Groups as IList<Group>).Skip(1).Select(g => g.Value);
+            var input = File.ReadAllLines("../../../input.txt");
 
-            reactions = input.Select(line => Regex.Matches(line, @"(\d+) ([A-Z]+)") as IList<Match>)
-            .Select(FromMatch).ToDictionary(x => x.Result.name);
+            reactions = input
+                .Select(line => Regex.Matches(line, @"(\d+) ([A-Z]+)") as IList<Match>)
+                .Select(FromMatch)
+                .ToDictionary(x => x.Result.name);
 
-            var allProducts = reactions.Select(r => r.Value.Result.name).ToList();
+            CreateLevels();
 
-            var needed = new Dictionary<string, int>();
-            var fuelReaction = reactions["FUEL"];
-            foreach (var item in fuelReaction.Reagents)
-            {
-                needed.Add(item.name, item.amount);
-            }
-
-            levels = new Dictionary<string, int>();
-            levels["ORE"] = 0;
-            foreach (var item in allProducts)
-            {
-                levels.Add(item, getLevel(item, reactions));
-            }
-
-            while (needed.Count > 1)
-            {
-                var next = needed.MaxBy(x => levels[x.Key]).First();
-                needed.Remove(next.Key);
-                var react = reactions[next.Key];
-                var multi = (int)Math.Ceiling(next.Value / (double)react.Result.amount);
-                foreach (var reagent in react.Reagents)
-                {
-                    if (needed.ContainsKey(reagent.name))
-                        needed[reagent.name] += reagent.amount * multi;
-                    else
-                        needed.Add(reagent.name, reagent.amount * multi);
-                }
-            }
-            var minOrePerFuel = needed["ORE"];
-
+            var minOrePerFuel = GetNeededOreFor("FUEL", 1);
             Console.WriteLine($"Part 1: We need {minOrePerFuel } ORE");
 
+            var lowerBound = 1000000000000L / minOrePerFuel;
 
-            var estimate = 1000000000000L / minOrePerFuel;
-            var upperBound = estimate * 3;
-            var stepSize = upperBound / 2;
+            var upperBound = lowerBound * 2;
+            while (CanProduce("FUEL", upperBound))
+                upperBound *= 2;
+
+            var stepSize = CeilPo2((upperBound - lowerBound) / 2);
+            var estimate = lowerBound;
 
             while (stepSize > 0)
             {
-                var isPossible = CanProduce("FUEL", estimate);
-                if (isPossible)
-                {
-                    stepSize /= 2;
+                if (CanProduce("FUEL", estimate))
                     estimate += stepSize;
-                }
                 else
-                {
-                    stepSize /= 2;
                     estimate -= stepSize;
-                }
+
+                stepSize /= 2;
             }
+
             while (!CanProduce("FUEL", estimate))
                 estimate--;
 
-            while (CanProduce("FUEL", estimate))
-                estimate++;
-
-            estimate -= 1;
 
             Console.WriteLine($"Part 2: We can produce {estimate} fuel");
 
@@ -110,34 +77,55 @@ namespace Day_14
         }
 
         private static bool CanProduce(string product, long amount = 1)
+            => GetNeededOreFor(product, amount) <= 1000000000000L;
+
+        private static int CeilPo2(int v)
+        {
+            v--;
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            return v + 1;
+        }
+        private static long CeilPo2(long v)
+        {
+            v--;
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            v |= v >> 32;
+            return v + 1;
+        }
+
+        private static long GetNeededOreFor(string product, long amount = 1)
         {
             if (product == "ORE")
-                return false;
+                return amount;
 
-            var reactionResult = reactions[product].Result.amount;
-            var reactionCount = (int)Math.Ceiling(amount / (double)reactionResult);
-
-            var needed = new Dictionary<string, long>();
-            needed.Add(product, amount);
-
-            while (needed.Any(x => x.Key != "ORE"))
+            var needed = new Dictionary<string, long>
             {
-                checked
+                { product, amount }
+            };
+
+            checked
+            {
+                while (needed.Any(x => x.Key != "ORE"))
                 {
                     var next = needed.MaxBy(x => levels[x.Key]).First();
                     _ = needed.Remove(next.Key);
                     var react = reactions[next.Key];
-                    long multi = (long)Math.Ceiling(next.Value / (double)react.Result.amount);
+                    var reactionCount = (long)Math.Ceiling(next.Value / (double)react.Result.amount);
                     foreach (var reagent in react.Reagents)
                     {
-                        if (needed.ContainsKey(reagent.name))
-                            needed[reagent.name] += reagent.amount * multi;
-                        else
-                            needed.Add(reagent.name, reagent.amount * multi);
+                        needed.AddOrModify(reagent.name, 0, x => x + (reagent.amount * reactionCount));
                     }
                 }
             }
-            return needed["ORE"] < 1000000000000L;
+            return needed["ORE"];
         }
 
         private static Reaction FromMatch(IEnumerable<Match> matches)
@@ -145,17 +133,17 @@ namespace Day_14
             var groups = matches.SelectMany(m => (m.Groups as IList<Group>).Skip(1)).ToList();
             return new Reaction(groups.Pairwise().Select(t => (t.Item2.Value, int.Parse(t.Item1.Value))));
         }
-        private static int getLevel(string product, Dictionary<string, Reaction> reactions)
+
+        private static void CreateLevels()
         {
-            if (product == "ORE")
-            {
-                return 0;
-            }
-            var r = reactions[product];
-            if (r.Reagents.All(x => x.name == "ORE"))
-                return 1;
-            else
-                return r.Reagents.Max(x => getLevel(x.name, reactions)) + 1;
+            static int getLevel(string product)
+                => levels.GetOrAdd(product, p => reactions[p].Reagents.Max(x => getLevel(x.name)) + 1);
+
+
+            levels = new Dictionary<string, int>();
+            levels["ORE"] = 0;
+
+            getLevel("FUEL");
         }
     }
 }
