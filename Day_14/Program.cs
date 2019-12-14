@@ -25,6 +25,10 @@ namespace Day_14
 
     class Program
     {
+        private static Dictionary<string, int> levels;
+        private static Dictionary<string, long> stock;
+        private static Dictionary<string, Reaction> reactions;
+
         static void Main()
         {
             var input = File.ReadAllLines("../../../input.txt");
@@ -34,7 +38,7 @@ namespace Day_14
 
             Func<Match, IEnumerable<string>> MatchToGroups = m => (m.Groups as IList<Group>).Skip(1).Select(g => g.Value);
 
-            var reactions = input.Select(line => Regex.Matches(line, @"(\d+) ([A-Z]+)") as IList<Match>)
+            reactions = input.Select(line => Regex.Matches(line, @"(\d+) ([A-Z]+)") as IList<Match>)
             .Select(FromMatch).ToDictionary(x => x.Result.name);
 
             var allProducts = reactions.Select(r => r.Value.Result.name).ToList();
@@ -46,7 +50,7 @@ namespace Day_14
                 needed.Add(item.name, item.amount);
             }
 
-            var levels = new Dictionary<string, int>();
+            levels = new Dictionary<string, int>();
             levels["ORE"] = 0;
             foreach (var item in allProducts)
             {
@@ -67,12 +71,73 @@ namespace Day_14
                         needed.Add(reagent.name, reagent.amount * multi);
                 }
             }
+            var minOrePerFuel = needed["ORE"];
 
-            Console.WriteLine($"Part 1: We need {needed["ORE"]} ORE");
+            Console.WriteLine($"Part 1: We need {minOrePerFuel } ORE");
+
+
+            var estimate = 1000000000000L / minOrePerFuel;
+            var upperBound = estimate * 3;
+            var stepSize = upperBound / 2;
+
+            while (stepSize > 0)
+            {
+                var isPossible = CanProduce("FUEL", estimate);
+                if (isPossible)
+                {
+                    stepSize /= 2;
+                    estimate += stepSize;
+                }
+                else
+                {
+                    stepSize /= 2;
+                    estimate -= stepSize;
+                }
+            }
+            while (!CanProduce("FUEL", estimate))
+                estimate--;
+
+            while (CanProduce("FUEL", estimate))
+                estimate++;
+
+            estimate -= 1;
+
+            Console.WriteLine($"Part 2: We can produce {estimate} fuel");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
+        }
+
+        private static bool CanProduce(string product, long amount = 1)
+        {
+            if (product == "ORE")
+                return false;
+
+            var reactionResult = reactions[product].Result.amount;
+            var reactionCount = (int)Math.Ceiling(amount / (double)reactionResult);
+
+            var needed = new Dictionary<string, long>();
+            needed.Add(product, amount);
+
+            while (needed.Any(x => x.Key != "ORE"))
+            {
+                checked
+                {
+                    var next = needed.MaxBy(x => levels[x.Key]).First();
+                    _ = needed.Remove(next.Key);
+                    var react = reactions[next.Key];
+                    long multi = (long)Math.Ceiling(next.Value / (double)react.Result.amount);
+                    foreach (var reagent in react.Reagents)
+                    {
+                        if (needed.ContainsKey(reagent.name))
+                            needed[reagent.name] += reagent.amount * multi;
+                        else
+                            needed.Add(reagent.name, reagent.amount * multi);
+                    }
+                }
+            }
+            return needed["ORE"] < 1000000000000L;
         }
 
         private static Reaction FromMatch(IEnumerable<Match> matches)
