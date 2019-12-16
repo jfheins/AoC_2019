@@ -27,15 +27,15 @@ m[30]
 m[31]
 	VAR_target_X(1039) = VAR_player_X(1034) + 0
 m[35]
-	m[1041] = m[1036] * 1
+	VAR_targetX_MOD2(1041) = m[1036] * 1
 m[39]
 	VAR_target_Y(1040) = VAR_player_Y(1035) - 1
 m[43]
-	m[1043] = m[1038] == 0 ? 1:0
+	VAR_targetY_MOD2(1043) = m[1038] == 0 ? 1:0
 m[47]
-	var_tmp = -1 * m[1043]
+	var_tmp = -1 * VAR_targetY_MOD2(1043)
 m[51]
-	m[1042] = m[1037] - m[1043]
+	VAR_targetY_DIV2(1042) = m[1037] - VAR_targetY_MOD2(1043)
 m[55]
 	goto 124
 	
@@ -43,13 +43,13 @@ m[55]
 m[58]
 	VAR_target_X(1039) = VAR_player_X(1034) + 0
 m[62]
-	m[1041] = 1 * m[1036]
+	VAR_targetX_MOD2(1041) = 1 * m[1036]
 m[66]
 	VAR_target_Y(1040) = VAR_player_Y(1035) + 1
 m[70]
-	m[1043] = (1 if m[1038] == 0 else 0)
+	VAR_targetY_MOD2(1043) = (1 if m[1038] == 0 else 0)
 m[74]
-	m[1042] = m[1037] + m[1038]
+	VAR_targetY_DIV2(1042) = m[1037] + m[1038]
 m[78]
 	goto 124
 	
@@ -57,13 +57,13 @@ m[78]
 m[81]
 	VAR_target_X(1039) = VAR_player_X(1034) - 1
 m[85]
-	m[1041] = (1 if m[1036] == 0 else 0)
+	VAR_targetX_MOD2(1041) = (1 if m[1036] == 0 else 0)
 m[89]
 	VAR_target_Y(1040) = 1 * VAR_player_Y(1035)
 m[93]
-	m[1043] = m[1038]
+	VAR_targetY_MOD2(1043) = m[1038]
 m[97]
-	m[1042] = m[1037]
+	VAR_targetY_DIV2(1042) = m[1037]
 m[101]
 	goto 124
 	
@@ -71,13 +71,13 @@ m[101]
 m[104]
 	VAR_target_X(1039) = VAR_player_X(1034) + 1
 m[108]
-	m[1041] = (1 if m[1036] == 0 else 0)
+	VAR_targetX_MOD2(1041) = (1 if m[1036] == 0 else 0)
 m[112]
 	VAR_target_Y(1040) = 1 * VAR_player_Y(1035)
 m[116]
-	m[1043] = m[1038]
+	VAR_targetY_MOD2(1043) = m[1038]
 m[120]
-	m[1042] = m[1037]
+	VAR_targetY_DIV2(1042) = m[1037]
 	
 
 m[124]
@@ -117,7 +117,7 @@ m[162]
 	
 
 m[165]
-	var_tmp = m[1041] * m[1043]
+	var_tmp = VAR_targetX_MOD2(1041) * VAR_targetY_MOD2(1043)
 m[169]
 	if var_tmp == 0:
     goto 179
@@ -128,12 +128,14 @@ m[176]
 	
 
 m[179]
-	var_tmp = m[1041] + m[1043]
+	var_tmp = VAR_targetX_MOD2(1041) + VAR_targetY_MOD2(1043)
 m[183]
 	if var_tmp == 0:
     goto 217 // hit WALL
+
+
 m[186]
-	var_tmp = m[1042] + m[1043]
+	var_tmp = VAR_targetY_DIV2(1042) + VAR_targetY_MOD2(1043)
 m[190]
 	var_tmp = tmp - 1
 m[194]
@@ -145,7 +147,7 @@ m[202]
 m[206]
 	VAR xx = 252 + var_tmp
 m[210]
-	VAR_output_hint = m[xx] < 42 ? 1 : 0
+	VAR_output_hint = m[xx] < 42 ? OK : WALL
 m[214]
 	goto 224 // move player and print hint
 
@@ -164,11 +166,11 @@ m[227]
 m[231]
 	VAR_player_Y(1035) = VAR_target_Y(1040)
 m[235]
-	m[1036] = m[1041]
+	m[1036] = VAR_targetX_MOD2(1041)
 m[239]
-	m[1038] = m[1043]
+	m[1038] = VAR_targetY_MOD2(1043)
 m[243]
-	m[1037] = m[1042]
+	m[1037] = VAR_targetY_DIV2(1042)
 
 m[247]
 	print(VAR_output_hint)
