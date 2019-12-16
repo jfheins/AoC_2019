@@ -30,7 +30,7 @@ namespace Day_15
             var oxygen = search.FindFirst(laby.Origin, n => n == laby.OxygenPos);
             Console.WriteLine($"Part 1: The droid need {oxygen.Length} steps.");
 
-            var filled = search.FindAll(laby.OxygenPos, n => true);
+            var filled = search.FindLeafs(laby.OxygenPos);
 
             var longestPath = filled.Max(path => path.Length);
             Console.WriteLine($"Part 2: The point furthest from the oxygen is {longestPath} steps away.");
