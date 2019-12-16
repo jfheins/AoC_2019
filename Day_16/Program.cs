@@ -8,42 +8,20 @@ using Core.Combinatorics;
 
 namespace Day_16
 {
-
-
     class Program
     {
+        private static int[] signalCache2;
 
-        private static readonly Dictionary<(int, int), int> signalCache = new Dictionary<(int, int), int>();
-
+        private const int phaseCount = 100;
 
         static void Main()
         {
-            var input = File.ReadAllText("../../../input.txt").Select(c => c - '0').ToArray();
-            //input = "12345678".Select(c => c - '0').ToArray();
-
-            var phaseCount = 100;
-
             var sw = new Stopwatch();
             sw.Start();
 
-            for (int i = 0; i < input.Length; i++)
-            {
-                signalCache.Add((i, 0), input[i]);
-            }
-
-            Console.Write(CalculateSignal2(input, 0, phaseCount));
-            Console.Write(CalculateSignal2(input, 1, phaseCount));
-            Console.Write(CalculateSignal2(input, 2, phaseCount));
-            Console.Write(CalculateSignal2(input, 3, phaseCount));
-            Console.Write(CalculateSignal2(input, 4, phaseCount));
-            Console.Write(CalculateSignal2(input, 5, phaseCount));
-            Console.Write(CalculateSignal2(input, 6, phaseCount));
-            Console.Write(CalculateSignal2(input, 7, phaseCount));
-            Console.WriteLine();
-
-            Console.WriteLine($"Filling: {input.Length * phaseCount / (double)signalCache.Count}");
-
-            var basePattern = new int[] { 0, 1, 0, -1 };
+            var inputString = File.ReadAllText("../../../input.txt");
+            var input = inputString.Select(c => c - '0').ToArray();
+            //input = "12345678".Select(c => c - '0').ToArray();
 
             for (int phase = 0; phase < phaseCount; phase++)
             {
@@ -57,27 +35,35 @@ namespace Day_16
             Console.WriteLine($"Part 1: After 100 phases: {string.Join("", input.Take(8))}");
             Console.WriteLine($"Part 1 Solution =         40921727");
 
+            //Console.WriteLine($"Part 1: After {phaseCount} phases: {string.Join("", input)}");
+            // ============================================================
 
-            //input = File.ReadAllText("../../../input.txt").Select(c => c - '0').ToArray();
-            //input = Enumerable.Repeat(input, 10).SelectMany(x => x).ToArray();
 
-            //for (int phase = 0; phase < 100; phase++)
-            //{
-            //    var tmp = (int[])input.Clone();
-            //    for (int i = 0; i < input.Length; i++)
-            //    {
-            //        var signal = 0;
-            //        for (int j = 0; j < tmp.Length; j++)
-            //        {
-            //            var v = ((j + 1) / (i + 1)) % 4;
-            //            signal += basePattern[v] * tmp[j];
-            //        }
+            input = inputString.Select(c => c - '0').ToArray();
+            input = Enumerable.Repeat(input, 1).SelectMany(x => x).ToArray();
 
-            //        input[i] = Normalize(signal);
-            //    }
-            //}
+            signalCache2 = new int[input.Length * (phaseCount + 1)];
+            for (int i = 0; i < signalCache2.Length; i++)
+                signalCache2[i] = int.MaxValue;
 
-            // Console.WriteLine($"Part 2: After 100 phases: {string.Join("", input.Take(8))}");
+            for (int i = 0; i < input.Length; i++)
+            {
+                signalCache2[i * (phaseCount + 1)] = input[i];
+            }
+
+            var messageOffset = int.Parse(inputString.Substring(0, 7));
+
+            Console.Write(CalculateSignal2(input, 0, phaseCount));
+            Console.Write(CalculateSignal2(input, 1, phaseCount));
+            Console.Write(CalculateSignal2(input, 2, phaseCount));
+            Console.Write(CalculateSignal2(input, 3, phaseCount));
+            Console.Write(CalculateSignal2(input, 4, phaseCount));
+            Console.Write(CalculateSignal2(input, 5, phaseCount));
+            Console.Write(CalculateSignal2(input, 6, phaseCount));
+            Console.Write(CalculateSignal2(input, 7, phaseCount));
+            Console.WriteLine();
+
+            //Console.WriteLine($"Part 2: After 100 phases: {string.Join("", input.Take(8))}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
@@ -114,23 +100,54 @@ namespace Day_16
 
         private static int CalculateSignal2(int[] initialSignal, int index, int phase)
         {
-            if (signalCache.TryGetValue((index, phase), out var val))
-                return val;
+            var cacheIdx = index * (phaseCount + 1) + phase;
+            if (signalCache2[cacheIdx] < int.MaxValue)
+                return signalCache2[cacheIdx];
 
-
-            var basePattern = new int[] { 0, 1, 0, -1 };
             var signal = 0;
 
-            for (int j = 0; j < initialSignal.Length; j++)
+            if (index * 4 < initialSignal.Length)
             {
-                var multiplier = basePattern[((j + 1) / (index + 1)) % 4];
-                if (multiplier != 0)
+                var basePattern = new int[] { 0, 1, 0, -1 };
+                for (int j = index; j < initialSignal.Length; j++)
                 {
-                    signal += multiplier * CalculateSignal2(initialSignal, j, phase - 1);
+                    var multiplier = basePattern[((j + 1) / (index + 1)) % 4];
+                    if (multiplier != 0)
+                    {
+                        if (phase == 1)
+                            signal += multiplier * signalCache2[j * (phaseCount + 1)];
+                        else
+                            signal += multiplier * CalculateSignal2(initialSignal, j, phase - 1);
+                    }
+                    else
+                    {
+                        j += index;
+                    }
+                }
+            }
+            else
+            {
+                var maxLoop = Math.Min(2 * index + 1, initialSignal.Length);
+                for (int j = index; j < maxLoop; j++)
+                {
+                    if (phase == 1)
+                        signal += signalCache2[j * (phaseCount + 1)];
+                    else
+                        signal += CalculateSignal2(initialSignal, j, phase - 1);
+                }
+
+                maxLoop = Math.Min(4 * index + 3, initialSignal.Length);
+                for (int j = 3 * index + 2; j < maxLoop; j++)
+                {
+                    if (phase == 1)
+                        signal -= signalCache2[j * (phaseCount + 1)];
+                    else
+                        signal -= CalculateSignal2(initialSignal, j, phase - 1);
                 }
             }
 
-            return signalCache[(index, phase)] = Normalize(signal);
+
+            return signalCache2[cacheIdx] = Normalize(signal);
         }
 
         private static int Normalize(int v)
