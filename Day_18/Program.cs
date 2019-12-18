@@ -13,8 +13,8 @@ namespace Day_18
     class Program
     {
         private static Dictionary<Point, char> _map;
-
-        private static readonly Dictionary<char, Point> _keys = new Dictionary<char, Point>();
+        private static Point initialPos;
+        public static readonly Dictionary<char, Point> _keys = new Dictionary<char, Point>();
         private static HashSet<char> _allKeys;
         private static int counter = 0;
         private static readonly Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)> _keyPaths
@@ -27,10 +27,10 @@ namespace Day_18
             var sw = new Stopwatch();
             sw.Start();
 
-            var input = File.ReadAllLines("../../../bsp3.txt");
+            var input = File.ReadAllLines("../../../input.txt");
 
             _map = new Dictionary<Point, char>();
-            var pos = Point.Empty;
+            initialPos = Point.Empty;
 
             for (int y = 0; y < input.Length; y++)
             {
@@ -39,8 +39,8 @@ namespace Day_18
                     _map.Add(new Point(x, y), input[y][x]);
                     if (input[y][x] == '@')
                     {
-                        pos = new Point(x, y);
-                        _map[pos] = '.';
+                        initialPos = new Point(x, y);
+                        _map[initialPos] = '.';
                     }
                     if (char.IsLower(input[y][x]))
                         _keys.Add(input[y][x], new Point(x, y));
@@ -61,15 +61,15 @@ namespace Day_18
                 }
             }
 
-            var strategySearch = new AStarSearch<(Point pos, string keys)>(EqualityComparer<(Point, string)>.Default, Expander);
+            var strategySearch = new AStarSearch<(Point pos, string keys)>(new StateComparer(), Expander);
 
             var path = strategySearch.FindFirst(
-                (pos, ""),
+                (initialPos, ""),
                 node => node.keys.Length == _keys.Count,
                 EstimateRemainder);
 
             Console.WriteLine($"Part 1: {path.Cost} steps for {path.Target.keys}");
-
+            Console.WriteLine(PathSteps(path.Target.keys));
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
@@ -93,7 +93,7 @@ namespace Day_18
                 var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
                 var minBetween = new Combinations<char>(neededKeys, 2).Select(pair => _keyPaths[(pair[0], pair[1])].length).Min();
 
-                return minFirst + neededKeys.Count * minBetween * 3.5f;
+                return minFirst + neededKeys.Count * minBetween;
             }
         }
 
@@ -105,6 +105,39 @@ namespace Day_18
         private static int PathSteps(string path)
         {
             return _firstKeySteps[path[0]] + path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
+        }
+
+        private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
+        private static readonly int[] primes = new int[] { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
+
+        public static long ReachableKeys(string ownedKeys)
+        {
+            //Func<ICollection<int>, long> compressor = x => x.Sum() * 100 + x.Count;
+            Func<ICollection<int>, long> compressor = x => (x.OrderByDescending(x => x).Select((x, i) => x * (long)primes[i]).Sum() * 100) + x.Count;
+
+            if (ownedKeys == "")
+            {
+                return compressor(_firstKeySteps.Values);
+            }
+            else
+            {
+                return _reachCache.GetOrAdd(ownedKeys, keys =>
+                {
+                    var thisKey = keys[^1];
+                    var result = new List<int>();
+                    var ownedKeys = new HashSet<char>(keys);
+                    foreach (var otherKey in _keys.Where(x => !ownedKeys.Contains(x.Key)))
+                    {
+                        var (length, necessaryKeys) = _keyPaths[(thisKey, otherKey.Key)];
+                        if (necessaryKeys.IsSubsetOf(keys))
+                        {
+                            result.Add(length);
+                        }
+                    }
+                    return compressor(result);
+                });
+
+            }
         }
 
         private static IEnumerable<((Point pos, string keys) node, float cost)> Expander((Point pos, string keys) arg)
@@ -171,18 +204,23 @@ namespace Day_18
 
             }
         }
-    }
 
-    class StateComparer : IEqualityComparer<(Point, string)>
-    {
-        public bool Equals([AllowNull] (Point, string) x, [AllowNull] (Point, string) y)
+        class StateComparer : IEqualityComparer<(Point pos, string keys)>
         {
-            return true;
-        }
+            public bool Equals([AllowNull] (Point pos, string keys) left, [AllowNull] (Point pos, string keys) right)
+            {
+                // Two states are equal if we can reach the same number of keys and with the same amount of steps in total
+                if (left.keys.Length != right.keys.Length)
+                {
+                    return false;
+                }
+                return ReachableKeys(left.keys) == ReachableKeys(right.keys);
+            }
 
-        public int GetHashCode([DisallowNull] (Point, string) obj)
-        {
-            throw new NotImplementedException();
+            public int GetHashCode([DisallowNull] (Point pos, string keys) obj)
+            {
+                return obj.keys.Length;
+            }
         }
     }
 }
