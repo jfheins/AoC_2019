@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using Core;
 using Core.Combinatorics;
+using MoreLinq;
 
 namespace Day_18
 {
@@ -14,7 +15,7 @@ namespace Day_18
     {
         private static Dictionary<Point, char> _map;
         private static Point initialPos;
-        public static readonly Dictionary<char, Point> _keys = new Dictionary<char, Point>();
+        public static readonly Dictionary<char, Point> _mapKeyToPosition = new Dictionary<char, Point>();
         private static HashSet<char> _allKeys;
         private static int counter = 0;
         private static readonly Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)> _keyPaths
@@ -40,19 +41,22 @@ namespace Day_18
                     if (input[y][x] == '@')
                     {
                         initialPos = new Point(x, y);
+                        _mapKeyToPosition.Add(input[y][x], new Point(x, y));
                         _map[initialPos] = '.';
                     }
                     if (char.IsLower(input[y][x]))
-                        _keys.Add(input[y][x], new Point(x, y));
+                        _mapKeyToPosition.Add(input[y][x], new Point(x, y));
                 }
             }
-            _allKeys = new HashSet<char>(_keys.Keys);
+            _allKeys = new HashSet<char>(_mapKeyToPosition.Keys);
 
             // Populate key path cache
-            foreach (var key in _keys)
+            var allKeyPoints = new HashSet<Point>(_mapKeyToPosition.Values);
+            foreach (var key in _mapKeyToPosition)
             {
                 var search = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, PointExpandThroughDoors) { PerformParallelSearch = false };
-                var others = search.FindAll(key.Value, p => _keys.ContainsValue(p));
+                var others = search.FindAll(key.Value, p => p != key.Value && allKeyPoints.Contains(p));
+
                 foreach (var other in others)
                 {
                     var doorsOnTheWay = string.Concat(other.Steps.Select(p => _map[p]).Where(x => char.IsUpper(x)));
@@ -61,40 +65,39 @@ namespace Day_18
                 }
             }
 
-            var strategySearch = new AStarSearch<(Point pos, string keys)>(new StateComparer(), Expander);
+            var strategySearch = new AStarSearch<string>(new StateComparer(), Expander);
 
             var path = strategySearch.FindFirst(
-                (initialPos, ""),
-                node => node.keys.Length == _keys.Count,
+                "@",
+                node => node.Length == _allKeys.Count,
                 EstimateRemainder);
 
-            Console.WriteLine($"Part 1: {path.Cost} steps for {path.Target.keys}");
-            Console.WriteLine(PathSteps(path.Target.keys));
+            Console.WriteLine($"Part 1: {path.Cost} steps for {path.Target}");
+            Console.WriteLine(PathSteps(path.Target));
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        private static float EstimateRemainder((Point pos, string keys) arg)
+        private static float EstimateRemainder(string keys)
         {
-            if (!_keys.ContainsKey(_map[arg.pos]) || arg.keys.Length == _allKeys.Count) // If we start at a key pos
-            {
+            if (keys.Length == _allKeys.Count)
                 return 0;
-            }
-            else
-            {
-                var thisKey = _map[arg.pos];
-                var ownedKeys = new HashSet<char>(arg.keys);
-                var neededKeys = _allKeys.Except(ownedKeys).ToList();
 
-                if (neededKeys.Count == 1)
-                    return _keyPaths[(thisKey, neededKeys[0])].length;
+            var thisKey = keys[^1];
+            var neededKeys = _allKeys.Except(keys).ToList();
 
-                var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
-                var minBetween = new Combinations<char>(neededKeys, 2).Select(pair => _keyPaths[(pair[0], pair[1])].length).Min();
+            if (neededKeys.Count == 1)
+                return _keyPaths[(thisKey, neededKeys[0])].length;
 
-                return minFirst + neededKeys.Count * minBetween;
-            }
+            var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
+            var minBetween = new Combinations<char>(neededKeys, 2)
+                .Select(pair => _keyPaths[(pair[0], pair[1])].length)
+                .MinBy(x => x)
+                .Take(neededKeys.Count - 1)
+                .Sum();
+
+            return minFirst + minBetween;
         }
 
         private static IEnumerable<Point> PointExpandThroughDoors(Point arg)
@@ -104,7 +107,7 @@ namespace Day_18
 
         private static int PathSteps(string path)
         {
-            return _firstKeySteps[path[0]] + path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
+            return path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
         }
 
         private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
@@ -112,80 +115,45 @@ namespace Day_18
 
         public static long ReachableKeys(string ownedKeys)
         {
-            //Func<ICollection<int>, long> compressor = x => x.Sum() * 100 + x.Count;
-            Func<ICollection<int>, long> compressor = x => (x.OrderByDescending(x => x).Select((x, i) => x * (long)primes[i]).Sum() * 100) + x.Count;
+            if (_reachCache.TryGetValue(ownedKeys, out var result))
+                return result;
+
+            static long compressor(ICollection<int> x) => (x.Sum() * 100) + x.Count;
 
             if (ownedKeys == "")
-            {
                 return compressor(_firstKeySteps.Values);
-            }
-            else
-            {
-                return _reachCache.GetOrAdd(ownedKeys, keys =>
-                {
-                    var thisKey = keys[^1];
-                    var result = new List<int>();
-                    var ownedKeys = new HashSet<char>(keys);
-                    foreach (var otherKey in _keys.Where(x => !ownedKeys.Contains(x.Key)))
-                    {
-                        var (length, necessaryKeys) = _keyPaths[(thisKey, otherKey.Key)];
-                        if (necessaryKeys.IsSubsetOf(keys))
-                        {
-                            result.Add(length);
-                        }
-                    }
-                    return compressor(result);
-                });
 
+            var thisKey = ownedKeys[^1];
+            var res = new List<int>();
+            foreach (var otherKey in _allKeys.Except(ownedKeys))
+            {
+                res.Add(_keyPaths[(thisKey, otherKey)].length);
             }
+            return _reachCache[ownedKeys] = compressor(res);
         }
 
-        private static IEnumerable<((Point pos, string keys) node, float cost)> Expander((Point pos, string keys) arg)
+        private static IEnumerable<(string node, float cost)> Expander(string keys)
         {
-            var ownedKeys = new HashSet<char>(arg.keys);
+            var ownedKeys = new HashSet<char>(keys);
             Func<Point, IEnumerable<Point>> expander = P => ExpandPoint(P, ownedKeys);
 
-            if (_keys.ContainsKey(_map[arg.pos])) // If we start at a key pos
+            var thisKey = keys[^1];
+            var result = new List<(string node, float cost)>();
+
+            foreach (var otherKey in _allKeys.Except(ownedKeys))
             {
-                var thisKey = _map[arg.pos];
-                var result = new List<((Point pos, string keys) node, float cost)>();
-
-                foreach (var nextKey in _keys.Where(x => !ownedKeys.Contains(x.Key)))
+                var path = _keyPaths[(thisKey, otherKey)];
+                if (path.necessaryKeys.IsSubsetOf(ownedKeys))
                 {
-                    var path = _keyPaths[(thisKey, nextKey.Key)];
-                    if (path.necessaryKeys.IsSubsetOf(ownedKeys))
-                    {
-                        result.Add(((nextKey.Value, arg.keys + nextKey.Key), path.length));
-                    }
+                    result.Add((keys + otherKey, path.length));
                 }
-
-                if (counter++ % 10000 == 0)
-                    Console.WriteLine($"pos = {_map[arg.pos]} having {arg.keys} explore to {string.Join(", ", result.Select(x => _map[x.node.pos]))} missing {_keys.Count - arg.keys.Length}");
-
-                if (arg.keys.Length == _keys.Count - 1)
-                {
-                    Console.WriteLine($"path {result[0].node.keys} has all keys with {PathSteps(result[0].node.keys)} steps. (Too long?).");
-                }
-
-                return result;
             }
-            else
-            {
-                var keySearch = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, expander) { PerformParallelSearch = false };
-                var possibleNextKeys = keySearch.FindAll(arg.pos, p => char.IsLower(_map[p]) && !ownedKeys.Contains(_map[p]));
 
-                var nextStates = possibleNextKeys
-                    .Select(nextKey => ((nextKey.Target, arg.keys + _map[nextKey.Target]), (float)nextKey.Length))
-                    .ToList();
+            if (counter++ % 10000 == 0)
+                Console.WriteLine($"Expanding {keys} to {string.Join(", ", result.Select(x => x.node))} missing {_mapKeyToPosition.Count - keys.Length}");
 
-                foreach (var s in possibleNextKeys)
-                {
-                    _firstKeySteps.Add(_map[s.Target], s.Length);
-                }
-                Console.WriteLine($"possible: {string.Join(", ", possibleNextKeys.Select(x => _map[x.Target] + x.Target.ToString()))}");
+            return result;
 
-                return nextStates;
-            }
         }
 
         private static IEnumerable<Point> ExpandPoint(Point p, HashSet<char> availableKeys)
@@ -205,21 +173,27 @@ namespace Day_18
             }
         }
 
-        class StateComparer : IEqualityComparer<(Point pos, string keys)>
+        class StateComparer : IEqualityComparer<string>
         {
-            public bool Equals([AllowNull] (Point pos, string keys) left, [AllowNull] (Point pos, string keys) right)
+            public bool Equals([AllowNull]string left, [AllowNull] string right)
             {
                 // Two states are equal if we can reach the same number of keys and with the same amount of steps in total
-                if (left.keys.Length != right.keys.Length)
+                if (left.Length != right.Length)
                 {
                     return false;
                 }
-                return ReachableKeys(left.keys) == ReachableKeys(right.keys);
+                return ReachableKeys(left) == ReachableKeys(right);
             }
 
-            public int GetHashCode([DisallowNull] (Point pos, string keys) obj)
+            public int GetHashCode([DisallowNull]  string obj)
             {
-                return obj.keys.Length;
+                return HashCode.Combine(obj.Length, SortString(obj));
+            }
+            static string SortString(string input)
+            {
+                char[] characters = input.ToArray();
+                Array.Sort(characters);
+                return new string(characters);
             }
         }
     }
