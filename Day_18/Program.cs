@@ -14,21 +14,18 @@ namespace Day_18
     class Program
     {
         private static Dictionary<Point, char> _map;
-        private static Point initialPos;
         public static readonly Dictionary<char, Point> _mapKeyToPosition = new Dictionary<char, Point>();
         private static HashSet<char> _allKeys;
         private static int counter = 0;
         private static readonly Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)> _keyPaths
             = new Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)>();
 
-        private static readonly Dictionary<char, int> _firstKeySteps = new Dictionary<char, int>();
-
         static void Main()
         {
             var sw = new Stopwatch();
             sw.Start();
 
-            var input = File.ReadAllLines("../../../input.txt");
+            var input = File.ReadAllLines("../../../input2.txt");
 
             _map = new Dictionary<Point, char>();
             var robotMarker = '1';
@@ -44,7 +41,7 @@ namespace Day_18
                         robots.Add(robotMarker);
                         digit = robotMarker++;
                     }
-                    _map.Add(new Point(x, y), input[y][x]);
+                    _map.Add(new Point(x, y), digit);
 
                     if (char.IsLower(digit))
                         _mapKeyToPosition.Add(digit, new Point(x, y));
@@ -72,17 +69,21 @@ namespace Day_18
             var strategySearch = new AStarSearch<string[]>(new StateComparer2(), Expander);
 
             var path = strategySearch.FindFirst(
+                //robots[0].ToString(),
                 robots.Select(c => c.ToString()).ToArray(),
-                node => node.Sum(q => q.Length) == _allKeys.Count,
+                IsFinished,
                 EstimateRemainder
                 );
 
             Console.WriteLine($"Part 2: {path.Cost} steps for {string.Join(", ", path.Target)}");
-            Console.WriteLine($"overall steps:{path.Target.Sum(PathSteps)} ");
+            Console.WriteLine($"overall steps:{PathSteps(path.Target)}");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
+
+        private static bool IsFinished(string[] node) => node.Sum(q => q.Length) == _allKeys.Count;
+        private static bool IsFinished(string node) => node.Length == _allKeys.Count;
 
         private static float EstimateRemainder(string[] keys)
         {
@@ -115,6 +116,11 @@ namespace Day_18
             return arg.MoveLURD().Where(x => _map[x] != '#');
         }
 
+        private static int PathSteps(string[] paths)
+        {
+            return paths.Sum(PathSteps);
+        }
+
         private static int PathSteps(string path)
         {
             return path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
@@ -122,10 +128,7 @@ namespace Day_18
 
         private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
 
-        public static long ReachableKeys(string[] ownedKeys)
-        {
-            return checked(ownedKeys.Sum(ReachableKeys));
-        }
+        public static long ReachableKeys(string[] ownedKeys) => checked(ownedKeys.Sum(ReachableKeys));
 
         public static long ReachableKeys(string ownedKeys)
         {
@@ -133,9 +136,6 @@ namespace Day_18
                 return result;
 
             static long compressor(ICollection<int> x) => (x.Sum() * 100) + x.Count;
-
-            if (ownedKeys == "")
-                return compressor(_firstKeySteps.Values);
 
             var thisKey = ownedKeys[^1];
             var res = new List<int>();
@@ -165,10 +165,11 @@ namespace Day_18
             }
         }
 
-        private static IEnumerable<(string node, float cost)> Expander(string keys, HashSet<char> ownedKeys = null)
-        {
-            ownedKeys ??= new HashSet<char>(keys);
+        private static IEnumerable<(string node, float cost)> Expander(string keys)
+            => Expander(keys, new HashSet<char>(keys));
 
+        private static IEnumerable<(string node, float cost)> Expander(string keys, HashSet<char> ownedKeys)
+        {
             Func<Point, IEnumerable<Point>> expander = P => ExpandPoint(P, ownedKeys);
 
             var thisKey = keys[^1];
@@ -232,15 +233,9 @@ namespace Day_18
 
         class StateComparer2 : IEqualityComparer<string[]>
         {
-            public bool Equals([AllowNull] string[] left, [AllowNull] string[] right)
-            {
-                return ReachableKeys(left) == ReachableKeys(right);
-            }
+            public bool Equals([AllowNull] string[] left, [AllowNull] string[] right) => ReachableKeys(left) == ReachableKeys(right);
 
-            public int GetHashCode([DisallowNull] string[] obj)
-            {
-                return obj.Aggregate(0, (hash, str) => HashCode.Combine(hash, str.Length));
-            }
+            public int GetHashCode([DisallowNull] string[] obj) => obj.Aggregate(0, (hash, str) => HashCode.Combine(hash, str.Length));
         }
     }
 }
