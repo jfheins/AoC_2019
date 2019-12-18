@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -13,9 +14,13 @@ namespace Day_18
     {
         private static Dictionary<Point, char> _map;
 
-        private static Dictionary<char, Point> _keys = new Dictionary<char, Point>();
+        private static readonly Dictionary<char, Point> _keys = new Dictionary<char, Point>();
+        private static HashSet<char> _allKeys;
+        private static int counter = 0;
         private static readonly Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)> _keyPaths
             = new Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)>();
+
+        private static readonly Dictionary<char, int> _firstKeySteps = new Dictionary<char, int>();
 
         static void Main()
         {
@@ -41,6 +46,7 @@ namespace Day_18
                         _keys.Add(input[y][x], new Point(x, y));
                 }
             }
+            _allKeys = new HashSet<char>(_keys.Keys);
 
             // Populate key path cache
             foreach (var key in _keys)
@@ -55,10 +61,12 @@ namespace Day_18
                 }
             }
 
+            var strategySearch = new AStarSearch<(Point pos, string keys)>(EqualityComparer<(Point, string)>.Default, Expander);
 
-            var strategySearch = new DijkstraSearch<(Point pos, string keys)>(EqualityComparer<(Point, string)>.Default, Expander);
-
-            var path = strategySearch.FindFirst((pos, ""), node => node.keys.Length == _keys.Count);
+            var path = strategySearch.FindFirst(
+                (pos, ""),
+                node => node.keys.Length == _keys.Count,
+                EstimateRemainder);
 
             Console.WriteLine($"Part 1: {path.Cost} steps for {path.Target.keys}");
 
@@ -67,9 +75,36 @@ namespace Day_18
             _ = Console.ReadLine();
         }
 
+        private static float EstimateRemainder((Point pos, string keys) arg)
+        {
+            if (!_keys.ContainsKey(_map[arg.pos]) || arg.keys.Length == _allKeys.Count) // If we start at a key pos
+            {
+                return 0;
+            }
+            else
+            {
+                var thisKey = _map[arg.pos];
+                var ownedKeys = new HashSet<char>(arg.keys);
+                var neededKeys = _allKeys.Except(ownedKeys).ToList();
+
+                if (neededKeys.Count == 1)
+                    return _keyPaths[(thisKey, neededKeys[0])].length;
+
+                var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
+                var minBetween = new Combinations<char>(neededKeys, 2).Select(pair => _keyPaths[(pair[0], pair[1])].length).Min();
+
+                return minFirst + neededKeys.Count * minBetween * 3.5f;
+            }
+        }
+
         private static IEnumerable<Point> PointExpandThroughDoors(Point arg)
         {
             return arg.MoveLURD().Where(x => _map[x] != '#');
+        }
+
+        private static int PathSteps(string path)
+        {
+            return _firstKeySteps[path[0]] + path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
         }
 
         private static IEnumerable<((Point pos, string keys) node, float cost)> Expander((Point pos, string keys) arg)
@@ -91,7 +126,13 @@ namespace Day_18
                     }
                 }
 
-                Console.WriteLine($"pos = {_map[arg.pos]} having {arg.keys} explore to {string.Join(", ", result.Select(x => _map[x.node.pos]))}");
+                if (counter++ % 10000 == 0)
+                    Console.WriteLine($"pos = {_map[arg.pos]} having {arg.keys} explore to {string.Join(", ", result.Select(x => _map[x.node.pos]))} missing {_keys.Count - arg.keys.Length}");
+
+                if (arg.keys.Length == _keys.Count - 1)
+                {
+                    Console.WriteLine($"path {result[0].node.keys} has all keys with {PathSteps(result[0].node.keys)} steps. (Too long?).");
+                }
 
                 return result;
             }
@@ -104,6 +145,10 @@ namespace Day_18
                     .Select(nextKey => ((nextKey.Target, arg.keys + _map[nextKey.Target]), (float)nextKey.Length))
                     .ToList();
 
+                foreach (var s in possibleNextKeys)
+                {
+                    _firstKeySteps.Add(_map[s.Target], s.Length);
+                }
                 Console.WriteLine($"possible: {string.Join(", ", possibleNextKeys.Select(x => _map[x.Target] + x.Target.ToString()))}");
 
                 return nextStates;
@@ -125,6 +170,19 @@ namespace Day_18
                     yield return next;
 
             }
+        }
+    }
+
+    class StateComparer : IEqualityComparer<(Point, string)>
+    {
+        public bool Equals([AllowNull] (Point, string) x, [AllowNull] (Point, string) y)
+        {
+            return true;
+        }
+
+        public int GetHashCode([DisallowNull] (Point, string) obj)
+        {
+            throw new NotImplementedException();
         }
     }
 }
