@@ -31,21 +31,25 @@ namespace Day_18
             var input = File.ReadAllLines("../../../input.txt");
 
             _map = new Dictionary<Point, char>();
-            initialPos = Point.Empty;
+            var robotMarker = '1';
+            var robots = new List<char>();
 
             for (int y = 0; y < input.Length; y++)
             {
                 for (int x = 0; x < input[y].Length; x++)
                 {
-                    _map.Add(new Point(x, y), input[y][x]);
-                    if (input[y][x] == '@')
+                    var digit = input[y][x];
+                    if (digit == '@')
                     {
-                        initialPos = new Point(x, y);
-                        _mapKeyToPosition.Add(input[y][x], new Point(x, y));
-                        _map[initialPos] = '.';
+                        robots.Add(robotMarker);
+                        digit = robotMarker++;
                     }
-                    if (char.IsLower(input[y][x]))
-                        _mapKeyToPosition.Add(input[y][x], new Point(x, y));
+                    _map.Add(new Point(x, y), input[y][x]);
+
+                    if (char.IsLower(digit))
+                        _mapKeyToPosition.Add(digit, new Point(x, y));
+                    if (char.IsDigit(digit))
+                        _mapKeyToPosition.Add(digit, new Point(x, y));
                 }
             }
             _allKeys = new HashSet<char>(_mapKeyToPosition.Keys);
@@ -65,27 +69,33 @@ namespace Day_18
                 }
             }
 
-            var strategySearch = new AStarSearch<string>(new StateComparer(), Expander);
+            var strategySearch = new AStarSearch<string[]>(new StateComparer2(), Expander);
 
             var path = strategySearch.FindFirst(
-                "@",
-                node => node.Length == _allKeys.Count,
-                EstimateRemainder);
+                robots.Select(c => c.ToString()).ToArray(),
+                node => node.Sum(q => q.Length) == _allKeys.Count,
+                EstimateRemainder
+                );
 
-            Console.WriteLine($"Part 1: {path.Cost} steps for {path.Target}");
-            Console.WriteLine(PathSteps(path.Target));
+            Console.WriteLine($"Part 2: {path.Cost} steps for {string.Join(", ", path.Target)}");
+            Console.WriteLine($"overall steps:{path.Target.Sum(PathSteps)} ");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
+        private static float EstimateRemainder(string[] keys)
+        {
+            return keys.Sum(EstimateRemainder);
+        }
+
         private static float EstimateRemainder(string keys)
         {
-            if (keys.Length == _allKeys.Count)
-                return 0;
-
             var thisKey = keys[^1];
-            var neededKeys = _allKeys.Except(keys).ToList();
+            var neededKeys = _allKeys.Except(keys).Where(k => _keyPaths.ContainsKey((thisKey, k))).ToList();
+
+            if (neededKeys.Count == 0)
+                return 0;
 
             if (neededKeys.Count == 1)
                 return _keyPaths[(thisKey, neededKeys[0])].length;
@@ -111,7 +121,11 @@ namespace Day_18
         }
 
         private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
-        private static readonly int[] primes = new int[] { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
+
+        public static long ReachableKeys(string[] ownedKeys)
+        {
+            return checked(ownedKeys.Sum(ReachableKeys));
+        }
 
         public static long ReachableKeys(string ownedKeys)
         {
@@ -127,14 +141,34 @@ namespace Day_18
             var res = new List<int>();
             foreach (var otherKey in _allKeys.Except(ownedKeys))
             {
-                res.Add(_keyPaths[(thisKey, otherKey)].length);
+                if (_keyPaths.TryGetValue((thisKey, otherKey), out var path))
+                    res.Add(path.length);
             }
             return _reachCache[ownedKeys] = compressor(res);
         }
 
-        private static IEnumerable<(string node, float cost)> Expander(string keys)
+        private static IEnumerable<(string[] node, float cost)> Expander(string[] keys)
         {
-            var ownedKeys = new HashSet<char>(keys);
+            if (counter++ % 1000 == 0)
+                Console.WriteLine($"Expanding {string.Join(", ", keys)}, still missing {_allKeys.Count - keys.Sum(arr => arr.Length)}");
+
+            var keyCopy = (string[])keys.Clone();
+            var ownedKeys = new HashSet<char>(keys.SelectMany(x => x));
+            for (int i = 0; i < keys.Length; i++)
+            {
+                foreach (var newState in Expander(keys[i], ownedKeys))
+                {
+                    keyCopy[i] = newState.node;
+                    yield return ((string[])keyCopy.Clone(), newState.cost);
+                }
+                keyCopy[i] = keys[i];
+            }
+        }
+
+        private static IEnumerable<(string node, float cost)> Expander(string keys, HashSet<char> ownedKeys = null)
+        {
+            ownedKeys ??= new HashSet<char>(keys);
+
             Func<Point, IEnumerable<Point>> expander = P => ExpandPoint(P, ownedKeys);
 
             var thisKey = keys[^1];
@@ -142,15 +176,14 @@ namespace Day_18
 
             foreach (var otherKey in _allKeys.Except(ownedKeys))
             {
-                var path = _keyPaths[(thisKey, otherKey)];
-                if (path.necessaryKeys.IsSubsetOf(ownedKeys))
+                if (_keyPaths.TryGetValue((thisKey, otherKey), out var path))
                 {
-                    result.Add((keys + otherKey, path.length));
+                    if (path.necessaryKeys.IsSubsetOf(ownedKeys))
+                    {
+                        result.Add((keys + otherKey, path.length));
+                    }
                 }
             }
-
-            if (counter++ % 10000 == 0)
-                Console.WriteLine($"Expanding {keys} to {string.Join(", ", result.Select(x => x.node))} missing {_mapKeyToPosition.Count - keys.Length}");
 
             return result;
 
@@ -194,6 +227,19 @@ namespace Day_18
                 char[] characters = input.ToArray();
                 Array.Sort(characters);
                 return new string(characters);
+            }
+        }
+
+        class StateComparer2 : IEqualityComparer<string[]>
+        {
+            public bool Equals([AllowNull] string[] left, [AllowNull] string[] right)
+            {
+                return ReachableKeys(left) == ReachableKeys(right);
+            }
+
+            public int GetHashCode([DisallowNull] string[] obj)
+            {
+                return obj.Aggregate(0, (hash, str) => HashCode.Combine(hash, str.Length));
             }
         }
     }
