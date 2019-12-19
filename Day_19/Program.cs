@@ -46,9 +46,8 @@ namespace Day_18
                 while (!getPoint(probe))
                     probe = probe.MoveTo(Direction.Right);
 
-                var probe2 = probe;
-                while (getPoint(probe2))
-                    probe2 = probe2.MoveTo(Direction.Right);
+                var firstxAfterBeam = new BinarySearch(x => !getPoint(new Point((int)x, probe.Y))).FindFirst(probe.X);
+                var probe2 = new Point((int)firstxAfterBeam, probe.Y);
 
                 var beamWidth = probe2.X - probe.X;
 
