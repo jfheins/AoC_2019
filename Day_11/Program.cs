@@ -56,11 +56,10 @@ namespace Day_11
             while (true)
             {
                 var currentPanel = panels.GetValueOrDefault(position, HullColor.Black);
-                var colorToPaint = c.RunWith((long)currentPanel, 2);
-                if (colorToPaint == null)
+                if (!c.RunWith((long)currentPanel, 2))
                     break;
 
-                panels[position] = (HullColor)colorToPaint.Value;
+                panels[position] = (HullColor)c.Outputs.Dequeue();
                 heading = c.Outputs.Dequeue() == 0
                     ? heading.TurnCounterClockwise()
                     : heading.TurnClockwise();

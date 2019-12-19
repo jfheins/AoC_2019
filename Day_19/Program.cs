@@ -7,7 +7,7 @@ using System.Linq;
 using Core;
 using Core.Combinatorics;
 
-namespace Day_18
+namespace Day_19
 {
     class Program
     {
@@ -39,14 +39,16 @@ namespace Day_18
 
             var probe = new Point(0, 10);
 
-            //var diagMove = new Size(1, 1);
+            var diagMove = new Size(1, 1);
             var topLeft = Point.Empty;
+
             while (topLeft == Point.Empty)
             {
+
                 while (!getPoint(probe))
                     probe = probe.MoveTo(Direction.Right);
 
-                var firstxAfterBeam = new BinarySearch(x => !getPoint(new Point((int)x, probe.Y))).FindFirst(probe.X);
+                var firstxAfterBeam = new BinarySearchLong(x => !getPoint(new Point((int)x, probe.Y))).FindFirst(probe.X);
                 var probe2 = new Point((int)firstxAfterBeam, probe.Y);
 
                 var beamWidth = probe2.X - probe.X;
@@ -66,7 +68,7 @@ namespace Day_18
             }
 
             Console.WriteLine($"Part 2: topleft point is at {topLeft} => answer = {topLeft.X * 10000 + topLeft.Y}");
-
+            Console.WriteLine("15231022");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
@@ -85,9 +87,9 @@ namespace Day_18
             }
         }
 
-        private static bool getPoint(Point p)
+        private static bool getPoint(int x, int y)
         {
-            return _pointCache.GetOrAdd(p, pos =>
+            return _pointCache.GetOrAdd(new Point(x, y), pos =>
             {
                 var computer = new LongCodeComputer(_input);
                 computer.Inputs.Enqueue(pos.X);
@@ -100,10 +102,10 @@ namespace Day_18
         private static bool allPointsInBeam(Rectangle rect)
         {
             var res = true;
-            res = res && getPoint(rect.Location + new Size(rect.Width - 1, 0));
-            res = res && getPoint(rect.Location + new Size(0, rect.Height - 1));
-            res = res && getPoint(rect.Location + new Size(rect.Width - 1, rect.Height - 1));
-            res = res && getPoint(rect.Location);
+            res = res && getPoint(rect.Left + rect.Width - 1, rect.Top);
+            res = res && getPoint(rect.Left, rect.Top + rect.Height - 1);
+            res = res && getPoint(rect.Left + rect.Width - 1, rect.Top + rect.Height - 1);
+            res = res && getPoint(rect.Left, rect.Top);
             return res;
         }
     }

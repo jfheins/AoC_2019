@@ -29,7 +29,7 @@ namespace Day_03
             var delay = wires[0][shortest] + wires[1][shortest];
             Console.WriteLine($"Part 2: point {shortest} has signal delay {delay}");
 
-            var search1 = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, p =>
+            var search1 = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, p =>
                 _mapDirectionToSize.Values.Select(s => p + s).Where(wires[0].Keys.Contains)
             )
             { PerformParallelSearch = false };
@@ -38,7 +38,7 @@ namespace Day_03
                 .ToDictionary(x => x.Target, x => x.Length);
 
 
-            var search2 = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, p =>
+            var search2 = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, p =>
                 _mapDirectionToSize.Values.Select(s => p + s).Where(wires[1].Keys.Contains)
             )
             { PerformParallelSearch = false };

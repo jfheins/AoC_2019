@@ -26,7 +26,7 @@ namespace Day_15
 
                 laby = new Labyrinth(input);
 
-                var search = new BreadthFirstSearch<Point, Direction>(EqualityComparer<Point>.Default,
+                var search = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default,
                     Expander)
                 { PerformParallelSearch = false };
 

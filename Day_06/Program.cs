@@ -20,7 +20,7 @@ namespace Day_06
             var orbitedby = items.ToLookup(x => x[0], x => x[1]);
             var orbits = items.ToDictionary(x => x[1], x => x[0]);
 
-            var search = new BreadthFirstSearch<string, int>(
+            var search = new BreadthFirstSearch<string>(
                 EqualityComparer<string>.Default,
                 node => orbitedby[node].Concat(orbits.GetOrEmpty(node)))
             { PerformParallelSearch = false };

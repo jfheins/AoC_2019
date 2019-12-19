@@ -15,15 +15,35 @@ namespace Core.Test
         [TestMethod]
         public void FindsFirstItemOpenInterval()
         {
-            var search = new BinarySearch<int>(x => x > 22).FindFirst();
+            var result = new BinarySearchLong(x => x > 22).FindFirst();
+            Assert.AreEqual(23, result);
         }
 
         [TestMethod]
-        public void GridGetsPopulated()
+        public void FindsLastOpenInterval()
         {
-            var grid = new Grid2<int>(p => p.X + p.Y);
+            var result = new BinarySearchLong(x => x < 27).FindLast();
+            Assert.AreEqual(26, result);
+        }
 
-            Assert.AreEqual(grid[1, 1], 2);
+        [TestMethod]
+        public void ChecksStart()
+        {
+            _ = Assert.ThrowsException<ArgumentOutOfRangeException>(() => new BinarySearchLong(x => x < 27).FindFirst());
+        }
+
+        [TestMethod]
+        public void SearchesEfficiently()
+        {
+            var callCount = 0;
+            bool predicate(long x)
+            {
+                callCount++;
+                return x > 65465;
+            }
+            var result = new BinarySearchLong(predicate).FindFirst();
+            Assert.AreEqual(65466, result);
+            Assert.AreEqual(32, callCount);
         }
     }
 }

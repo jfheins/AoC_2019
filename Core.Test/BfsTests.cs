@@ -15,7 +15,7 @@ namespace Core.Test
         [TestMethod]
         public void FindsInitialNode()
         {
-            var bfs = new BreadthFirstSearch<int, int>(EqualityComparer<int>.Default, _ => Enumerable.Empty<int>());
+            var bfs = new BreadthFirstSearch<int>(EqualityComparer<int>.Default, _ => Enumerable.Empty<int>());
             var result = bfs.FindAll(33, x => x > 0);
 
             Assert.AreEqual(1, result.Count);
@@ -27,7 +27,7 @@ namespace Core.Test
         [TestMethod]
         public void ReturnsEmptySetIfNothingFound()
         {
-            var bfs = new BreadthFirstSearch<int, int>(EqualityComparer<int>.Default, _ => Enumerable.Empty<int>());
+            var bfs = new BreadthFirstSearch<int>(EqualityComparer<int>.Default, _ => Enumerable.Empty<int>());
             var result = bfs.FindAll(0, x => x < 0);
 
             Assert.AreEqual(0, result.Count);
@@ -36,7 +36,7 @@ namespace Core.Test
         [TestMethod]
         public void FindsFirstTarget()
         {
-            var bfs = new BreadthFirstSearch<int, int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
+            var bfs = new BreadthFirstSearch<int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
             var result = bfs.FindFirst(1, x => x == 192);
 
             Assert.AreEqual(1, result.Steps.First());
@@ -47,7 +47,7 @@ namespace Core.Test
         [TestMethod]
         public void FindTargetSetInInfiniteGraph()
         {
-            var bfs = new BreadthFirstSearch<int, int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
+            var bfs = new BreadthFirstSearch<int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
 
             var result = bfs.FindAll(1, x => x < 30, null, 12);
 
@@ -62,7 +62,7 @@ namespace Core.Test
         [TestMethod]
         public void FindAllTargetsInFiniteGraph()
         {
-            var bfs = new BreadthFirstSearch<int, int>(
+            var bfs = new BreadthFirstSearch<int>(
                 EqualityComparer<int>.Default,
                 (int x) => (x > 100) ? Enumerable.Empty<int>() : new[] { x * 2, x * 3 });
 
@@ -79,7 +79,7 @@ namespace Core.Test
         [TestMethod]
         public void FindAllTargetsWithDistance()
         {
-            var bfs = new BreadthFirstSearch<int, int>(
+            var bfs = new BreadthFirstSearch<int>(
                 EqualityComparer<int>.Default,
                 (int x) => (x > 100) ? Enumerable.Empty<int>() : new[] { x * 2, x * 3 });
 
@@ -91,7 +91,7 @@ namespace Core.Test
         [TestMethod]
         public void FindAllTargetsWithPredecessor()
         {
-            var bfs = new BreadthFirstSearch<int, int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
+            var bfs = new BreadthFirstSearch<int>(EqualityComparer<int>.Default, x => new[] { x * 2, x * 3 });
 
             var result = bfs.FindAll2(1, node => node.Predecessor?.Item == 64, null, 1);
 
@@ -114,7 +114,7 @@ namespace Core.Test
                 yield return p + new Size(0, 1);
             }
 
-            var bfs = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, Expander)
+            var bfs = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, Expander)
             {
                 PerformParallelSearch = false
             };
@@ -141,7 +141,7 @@ namespace Core.Test
                 yield return p + new Size(0, 1);
             }
 
-            var bfs = new BreadthFirstSearch<Point, Size>(EqualityComparer<Point>.Default, Expander)
+            var bfs = new BreadthFirstSearch<Point>(EqualityComparer<Point>.Default, Expander)
             {
                 PerformParallelSearch = true
             };
