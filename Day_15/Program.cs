@@ -21,20 +21,24 @@ namespace Day_15
             var sw = new Stopwatch();
             sw.Start();
 
-            laby = new Labyrinth(input);
+            for (int i = 0; i < 100; i++)
+            {
 
-            var search = new BreadthFirstSearch<Point, Direction>(EqualityComparer<Point>.Default,
-                Expander)
-            { PerformParallelSearch = false };
+                laby = new Labyrinth(input);
 
-            var oxygen = search.FindFirst(laby.Origin, n => n == laby.OxygenPos);
-            Console.WriteLine($"Part 1: The droid need {oxygen.Length} steps.");
+                var search = new BreadthFirstSearch<Point, Direction>(EqualityComparer<Point>.Default,
+                    Expander)
+                { PerformParallelSearch = false };
 
-            var filled = search.FindLeafs(laby.OxygenPos);
+                var oxygen = search.FindFirst(laby.Origin, n => n == laby.OxygenPos);
+                //Console.WriteLine($"Part 1: The droid need {oxygen.Length} steps.");
 
-            var longestPath = filled.Max(path => path.Length);
-            Console.WriteLine($"Part 2: The point furthest from the oxygen is {longestPath} steps away.");
+                var filled = search.FindLeafs(laby.OxygenPos);
 
+                var longestPath = filled.Max(path => path.Length);
+                //Console.WriteLine($"Part 2: The point furthest from the oxygen is {longestPath} steps away.");
+
+            }
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
 
