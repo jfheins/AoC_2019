@@ -29,7 +29,7 @@ namespace Day_19
             {
                 for (int x = 0; x < 50; x++)
                 {
-                    var inBeam = getPoint(new Point(x, y));
+                    var inBeam = getPoint(x, y);
                     sum += inBeam ? 1 : 0;
                     Console.Write(inBeam ? '#' : '.');
                 }
@@ -39,28 +39,22 @@ namespace Day_19
 
             var probe = new Point(0, 10);
 
-            var diagMove = new Size(1, 1);
+            var diagMove = new Size(1, -1);
             var topLeft = Point.Empty;
 
             while (topLeft == Point.Empty)
             {
-
                 while (!getPoint(probe))
                     probe = probe.MoveTo(Direction.Right);
 
-                var firstxAfterBeam = new BinarySearchLong(x => !getPoint(new Point((int)x, probe.Y))).FindFirst(probe.X);
-                var probe2 = new Point((int)firstxAfterBeam, probe.Y);
+                var diagonal = new BinarySearchInt(dx => getPoint(probe + (diagMove * dx))).FindLast();
 
-                var beamWidth = probe2.X - probe.X;
-
-                for (int x = 0; x < beamWidth - 90; x++)
+                if (diagonal >= 98)
                 {
-                    probe2 = probe + new Size(x, 0);
-                    var rect = new Rectangle(probe2, new Size(100, 100));
+                    var rect = new Rectangle(probe.X, probe.Y-99, 100, 100);
                     if (allPointsInBeam(rect))
                     {
                         topLeft = rect.Location;
-                        //Paint(rect.Location, 100);
                         break;
                     }
                 }
@@ -68,7 +62,7 @@ namespace Day_19
             }
 
             Console.WriteLine($"Part 2: topleft point is at {topLeft} => answer = {topLeft.X * 10000 + topLeft.Y}");
-            Console.WriteLine("15231022");
+            //Console.WriteLine("15231022");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
@@ -76,20 +70,24 @@ namespace Day_19
 
         private static void Paint(Point start, int size)
         {
+            var line = new char[size];
             for (int y = start.Y; y < start.Y + size; y++)
             {
                 for (int x = start.X; x < start.X + size; x++)
                 {
-                    var inBeam = getPoint(new Point(x, y));
-                    Console.Write(inBeam ? '#' : '.');
+                    var inBeam = getPoint(x, y);
+                    line[x- start.X] = inBeam ? '#' : '.';
                 }
-                Console.WriteLine();
+                Console.WriteLine(line);
             }
         }
 
-        private static bool getPoint(int x, int y)
+
+        private static bool getPoint(int x, int y) => getPoint(new Point(x, y));
+
+        private static bool getPoint(Point p)
         {
-            return _pointCache.GetOrAdd(new Point(x, y), pos =>
+            return _pointCache.GetOrAdd(p, pos =>
             {
                 var computer = new LongCodeComputer(_input);
                 computer.Inputs.Enqueue(pos.X);
