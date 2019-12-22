@@ -40,8 +40,7 @@ namespace Day_22
 
             // mx + b = 2020
             // => x = (2020 - b) / m
-            var divisor = BigInteger.ModPow(finalFactor, bigDeckSize - 2, bigDeckSize);
-            var card = BigInteger.Multiply(new BigInteger(2020) - finalOffset, divisor);
+            var card = Divide(new BigInteger(2020) - finalOffset, finalFactor, bigDeckSize);
             card = Mod(card, bigDeckSize);            
             Console.WriteLine($"Part 2: card @ 2020 is {card}");
 
@@ -55,14 +54,27 @@ namespace Day_22
             // result = b * (1-m^(reps))/(1-m)
             var numerator = BigInteger.One - BigInteger.ModPow(bigFactor, repetition, bigDeckSize);
             var denominator = BigInteger.One - bigFactor;
-            denominator = BigInteger.ModPow(denominator, bigDeckSize-2, bigDeckSize);
-            var result = BigInteger.Multiply(numerator, denominator);
+            var result = Divide(numerator, denominator, bigDeckSize);
             return Mod(bigOffset * result, bigDeckSize);
+        }
+
+        private static BigInteger Divide(BigInteger numerator, BigInteger denominator, BigInteger ringSize)
+        {
+            // Multiplicative inverse element
+            denominator = BigInteger.ModPow(denominator, ringSize - 2, ringSize);
+            var result = BigInteger.Multiply(numerator, denominator);
+            return Mod(result, ringSize);
         }
 
         private static BigInteger Mod(BigInteger value, BigInteger ringSize)
         {
-            var r = BigInteger.Remainder(value, ringSize);
+            var r = value % ringSize;
+            return r < 0 ? r + ringSize : r;
+        }
+
+        private static long Mod(long value, long ringSize)
+        {
+            var r = value % ringSize;
             return r < 0 ? r + ringSize : r;
         }
 
@@ -92,12 +104,6 @@ namespace Day_22
                 factor = Mod(factor, deckSize);
                 offset = Mod(offset, deckSize);
             }
-        }
-
-        private static long Mod(long value, long ringSize)
-        {
-            var r = value % ringSize;
-            return r < 0 ? r + ringSize : r;
         }
 
         private static bool MatchDealWithIncrement(string s, out int increment)
