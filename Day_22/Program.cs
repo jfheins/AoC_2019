@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Core;
 using Core.Combinatorics;
+using System.Numerics;
 
 namespace Day_22
 {
@@ -18,53 +19,85 @@ namespace Day_22
 
             var input = File.ReadAllLines("../../../input.txt");
 
-            var posOfcardOfInterest = 2019;
-            var deckSize = 10007;
-            foreach (var command in input)
-            {
-                if (MatchDealWithIncrement(command, out var increment))
-                {
-                    posOfcardOfInterest = posOfcardOfInterest * increment % deckSize;
-                }
-                else if (MatchDealNewStack(command))
-                {
-                    posOfcardOfInterest = deckSize - posOfcardOfInterest - 1;
-                }
-                else if (MatchCut(command, out var amount))
-                {
-                    posOfcardOfInterest = Mod(posOfcardOfInterest - amount, deckSize);
-                }
-            }
-            Console.WriteLine($"Part 1: card of interest is now at {posOfcardOfInterest}");
+            var posOfcardOfInterest = 2019L;
+            var deckSize1 = 10007;
 
-            posOfcardOfInterest = 2019;
-            deckSize = 119315717514047L;
-            foreach (var command in input.Repeat(101741582076661L))
-            {
-                if (MatchDealWithIncrement(command, out var increment))
-                {
-                    posOfcardOfInterest = posOfcardOfInterest * increment % deckSize;
-                }
-                else if (MatchDealNewStack(command))
-                {
-                    posOfcardOfInterest = deckSize - posOfcardOfInterest - 1;
-                }
-                else if (MatchCut(command, out var amount))
-                {
-                    posOfcardOfInterest = Mod(posOfcardOfInterest - amount, deckSize);
-                }
-            }
+            SimplifySteps(input, deckSize1, out var factor1, out var offset1);
+
+            var finalPos = Mod(checked(posOfcardOfInterest * factor1 + offset1), deckSize1);
+            Console.WriteLine($"Part 1: card of interest is now at {finalPos}");
+
+            var deckSize2 = 119315717514047L;
+            var repetition = new BigInteger(101741582076661L);
+
+            SimplifySteps(input, deckSize2, out var factor2, out var offset2);
+
+            var bigFactor = new BigInteger(factor2);
+            var bigOffset = new BigInteger(offset2);
+            var bigDeckSize = new BigInteger(deckSize2);
+            var finalFactor = BigInteger.ModPow(bigFactor, repetition, bigDeckSize);
+            var finalOffset = CalcReihe(bigFactor, bigOffset, repetition, bigDeckSize);
+
+            // mx + b = 2020
+            // => x = (2020 - b) / m
+            var divisor = BigInteger.ModPow(finalFactor, bigDeckSize - 2, bigDeckSize);
+            var card = BigInteger.Multiply(new BigInteger(2020) - finalOffset, divisor);
+            card = Mod(card, bigDeckSize);            
+            Console.WriteLine($"Part 2: card @ 2020 is {card}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        private static int Mod(int value, int ringSize)
+        private static BigInteger CalcReihe(BigInteger bigFactor, BigInteger bigOffset, BigInteger repetition, BigInteger bigDeckSize)
         {
-            while (value < 0)
-                value += ringSize;
-            return value % ringSize;
+            // result = b * (1-m^(reps))/(1-m)
+            var numerator = BigInteger.One - BigInteger.ModPow(bigFactor, repetition, bigDeckSize);
+            var denominator = BigInteger.One - bigFactor;
+            denominator = BigInteger.ModPow(denominator, bigDeckSize-2, bigDeckSize);
+            var result = BigInteger.Multiply(numerator, denominator);
+            return Mod(bigOffset * result, bigDeckSize);
+        }
+
+        private static BigInteger Mod(BigInteger value, BigInteger ringSize)
+        {
+            var r = BigInteger.Remainder(value, ringSize);
+            return r < 0 ? r + ringSize : r;
+        }
+
+        private static void SimplifySteps(string[] input, long deckSize, out long factor, out long offset)
+        {
+            factor = 1L;
+            offset = 0L;
+            foreach (var command in input)
+            {
+                checked
+                {
+                    if (MatchDealWithIncrement(command, out var increment))
+                    {
+                        factor *= increment;
+                        offset *= increment;
+                    }
+                    else if (MatchDealNewStack(command))
+                    {
+                        factor *= -1;
+                        offset = -offset - 1;
+                    }
+                    else if (MatchCut(command, out var amount))
+                    {
+                        offset -= amount;
+                    }
+                }
+                factor = Mod(factor, deckSize);
+                offset = Mod(offset, deckSize);
+            }
+        }
+
+        private static long Mod(long value, long ringSize)
+        {
+            var r = value % ringSize;
+            return r < 0 ? r + ringSize : r;
         }
 
         private static bool MatchDealWithIncrement(string s, out int increment)
