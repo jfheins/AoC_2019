@@ -18,38 +18,69 @@ namespace Day_23
             var computers = new LongCodeComputer[50];
             for (int i = 0; i < 50; i++)
             {
-                computers[i] = LongCodeComputer.FromFile(@"../../../input.txt");
-                ;
+                computers[i] = LongCodeComputer.FromFile(@"../../../input.txt");                
                 computers[i].Inputs.Enqueue(i);
                 computers[i].DefaultInput = -1;
             }
 
-            Packet santaPacket = new Packet();
-            while (santaPacket.addr == 0)
+            Packet? natPacket = null;
+            Packet? lastNatPacket = null;
+            Packet? firstNatPacket = null;
+
+
+            var idlePeriod = 0;
+            var runNetwork = true;
+            while (runNetwork)
             {
                 foreach (var c in computers)
                 {
-                    c.Run(20);
+                    c.Run(2);
                 }
                 var packets = computers.SelectMany(c => CollectPackets(c)).ToList();
-                foreach (var p in packets)
+
+                if (packets.Any())
                 {
-                    if (p.addr == 255)
-                        santaPacket = p;
-                    else
-                        QueuePacket(computers[p.addr], p);
+                    idlePeriod = 0;
+                    foreach (var p in packets)
+                    {
+                        if (p.addr == 255)
+                            natPacket = p;
+                        else
+                            QueuePacket(computers[p.addr], p);
+                    }
+                }
+                else
+                    idlePeriod++;
+
+
+                if (idlePeriod > 1000 && natPacket.HasValue)
+                {
+                    // Send packet to fight network idling
+                    QueuePacket(computers[0], natPacket.Value);
+                    idlePeriod = 0;
+                    firstNatPacket ??= natPacket;
+                    Console.WriteLine($"Sent packet {natPacket.Value.y}");
+
+                    if (lastNatPacket.HasValue && lastNatPacket.Value.y == natPacket.Value.y)
+                    {
+                        Console.WriteLine($"Duplicate y! {natPacket.Value.y}");
+                        runNetwork = false;
+                    }
+
+                    lastNatPacket = natPacket;
+                    natPacket = null;
                 }
             }
+            // 19420 is too high
 
-
-            Console.WriteLine($"Part 1: santa packet has y value {santaPacket.y}");
+            Console.WriteLine($"Part 1: santa packet has y value {firstNatPacket.Value.y}");
 
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
-        private static void QueuePacket(LongCodeComputer c, Packet  p)
+        private static void QueuePacket(LongCodeComputer c, Packet p)
         {
             c.Inputs.Enqueue(p.x);
             c.Inputs.Enqueue(p.y);
@@ -69,7 +100,7 @@ namespace Day_23
 
     struct Packet
     {
-        public long addr; 
+        public long addr;
         public long x;
         public long y;
     }
