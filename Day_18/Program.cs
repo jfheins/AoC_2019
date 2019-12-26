@@ -5,9 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+
 using Core;
 using Core.Combinatorics;
-using MoreLinq;
 
 namespace Day_18
 {
@@ -19,6 +19,9 @@ namespace Day_18
         private static int counter = 0;
         private static readonly Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)> _keyPaths
             = new Dictionary<(char, char), (int length, HashSet<char> necessaryKeys)>();
+
+        private static readonly Dictionary<string, long> _reachCache = new Dictionary<string, long>();
+        private static int _minStepsBetweenKeys;
 
         static void Main()
         {
@@ -70,30 +73,39 @@ namespace Day_18
             var strategySearch = new AStarSearch<string[]>(new StateComparer2(), Expander);
 
             var path = strategySearch.FindFirst(
-                //robots[0].ToString(),
                 robots.Select(c => c.ToString()).ToArray(),
                 IsFinished,
-                EstimateRemainder
-                );
+                EstimateRemainder);
 
             Console.WriteLine($"Part 2: {path.Cost} steps for {string.Join(", ", path.Target)}");
-            Console.WriteLine($"overall steps:{PathSteps(path.Target)}");
             sw.Stop();
             Console.WriteLine($"Solving took {sw.ElapsedMilliseconds}ms.");
             _ = Console.ReadLine();
         }
 
         private static bool IsFinished(string[] node) => node.Sum(q => q.Length) == _allKeys.Count;
-        private static bool IsFinished(string node) => node.Length == _allKeys.Count;
 
-        private static float EstimateRemainder(string[] keys)
-        {
-            return (_allKeys.Count + 4 - keys.Sum(arr => arr.Length)) * _minStepsBetweenKeys;
-        }
+        private static float EstimateRemainder(string[] keys) => keys.Sum(EstimateRemainder);
 
         private static float EstimateRemainder(string keys)
         {
-            return (_allKeys.Count + 1 - keys.Length) * _minStepsBetweenKeys;
+            var thisKey = keys[^1];
+            var neededKeys = _allKeys.Except(keys).Where(k => _keyPaths.ContainsKey((thisKey, k))).ToList();
+
+            if (neededKeys.Count == 0)
+                return 0;
+
+            if (neededKeys.Count == 1)
+                return _keyPaths[(thisKey, neededKeys[0])].length;
+
+            var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
+            var minBetween = new Combinations<char>(neededKeys, 2)
+                .Select(pair => _keyPaths[(pair[0], pair[1])].length)
+                .OrderBy(x => x)
+                .Take(neededKeys.Count - 1)
+                .Sum();
+
+            return minFirst + minBetween;
         }
 
         private static IEnumerable<Point> PointExpandThroughDoors(Point arg)
@@ -101,41 +113,9 @@ namespace Day_18
             return arg.MoveLURD().Where(x => _map[x] != '#');
         }
 
-        private static int PathSteps(string[] paths)
-        {
-            return paths.Sum(PathSteps);
-        }
-
-        private static int PathSteps(string path)
-        {
-            return path.PairwiseWithOverlap().Sum(p => _keyPaths[(p.Item1, p.Item2)].length);
-        }
-
-        private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
-        private static int _minStepsBetweenKeys;
-
-        public static long ReachableKeys(string[] ownedKeys) => checked(ownedKeys.Sum(ReachableKeys));
-
-        public static long ReachableKeys(string ownedKeys)
-        {
-            if (_reachCache.TryGetValue(ownedKeys, out var result))
-                return result;
-
-            static long compressor(ICollection<int> x) => (x.Sum() * 100) + x.Count;
-
-            var thisKey = ownedKeys[^1];
-            var res = new List<int>();
-            foreach (var otherKey in _allKeys.Except(ownedKeys))
-            {
-                if (_keyPaths.TryGetValue((thisKey, otherKey), out var path))
-                    res.Add(path.length);
-            }
-            return _reachCache[ownedKeys] = compressor(res);
-        }
-
         private static IEnumerable<(string[] node, float cost)> Expander(string[] keys)
         {
-            if (counter++ % 1000 == 0)
+            if (counter++ % 800 == 0)
                 Console.WriteLine($"Expanding {string.Join(", ", keys)}, still missing {_allKeys.Count - keys.Sum(arr => arr.Length)}");
 
             var keyCopy = (string[])keys.Clone();
@@ -150,9 +130,6 @@ namespace Day_18
                 keyCopy[i] = keys[i];
             }
         }
-
-        private static IEnumerable<(string node, float cost)> Expander(string keys)
-            => Expander(keys, new HashSet<char>(keys));
 
         private static IEnumerable<(string node, float cost)> Expander(string keys, HashSet<char> ownedKeys)
         {
@@ -200,30 +177,6 @@ namespace Day_18
             }
         }
 
-        class StateComparer : IEqualityComparer<string>
-        {
-            public bool Equals([AllowNull]string left, [AllowNull] string right)
-            {
-                // Two states are equal if we can reach the same number of keys and with the same amount of steps in total
-                if (left.Length != right.Length)
-                {
-                    return false;
-                }
-                return ReachableKeys(left) == ReachableKeys(right);
-            }
-
-            public int GetHashCode([DisallowNull]  string obj)
-            {
-                return HashCode.Combine(obj.Length, SortString(obj));
-            }
-            static string SortString(string input)
-            {
-                char[] characters = input.ToArray();
-                Array.Sort(characters);
-                return new string(characters);
-            }
-        }
-
         class StateComparer2 : IEqualityComparer<string[]>
         {
             public bool Equals([AllowNull] string[] left, [AllowNull] string[] right)
@@ -237,7 +190,7 @@ namespace Day_18
                 return res;
             }
 
-            public int GetHashCode([DisallowNull] string[] obj) => obj[0].GetHashCode();
+            public int GetHashCode([DisallowNull] string[] obj) => obj.Length > 2 ? HashCode.Combine(obj[0], obj[1], obj[2]) : obj[0].GetHashCode();
         }
     }
 }
