@@ -11,27 +11,33 @@ namespace Day_24
 {
     class Program
     {
-        private static FiniteGrid2D<char> _map;
+        private static Dictionary<int, FiniteGrid2D<char>> _maps = new Dictionary<int, FiniteGrid2D<char>>();
 
         static void Main()
         {
             var sw = new Stopwatch();
             sw.Start();
-            _map = Grid2D.FromFile("../../../input.txt");
+            var map = Grid2D.FromFile("../../../bsp.txt");
 
             var seenRatings = new HashSet<long>();
-            var currentDiversity = CalcBiodiversity(_map);
+            var currentDiversity = CalcBiodiversity(map);
             while (!seenRatings.Contains(currentDiversity))
             {
                 _ = seenRatings.Add(currentDiversity);
-                _map = new FiniteGrid2D<char>(_map.Bounds.Size, Step);
-                currentDiversity = CalcBiodiversity(_map);
-                Console.WriteLine(_map.ToString());
+                map = new FiniteGrid2D<char>(map.Bounds.Size, p => Step(map, p));
+                currentDiversity = CalcBiodiversity(map);
+                Console.WriteLine(map.ToString());
             }
 
             Console.WriteLine($"Part 1: Biodiversity rating: {currentDiversity}.");
 
+            map = Grid2D.FromFile("../../../input.txt");
+            _maps.Add(0, map);
 
+            for (int i = 0; i < 10; i++)
+            {
+                StepAllMaps(_maps);
+            }
 
             Console.WriteLine($"Part 2: Path has 0 steps.");
 
@@ -40,10 +46,31 @@ namespace Day_24
             _ = Console.ReadLine();
         }
 
-        private static char Step(Point p)
+        private static void StepAllMaps(Dictionary<int, FiniteGrid2D<char>> maps)
         {
-            var neighborCount = _map.Get4NeighborsOf(p).Count(n => _map[n] == '#');
-            if (_map[p] == '#')
+            var levels = maps.Keys.MinMax();
+            _ = maps.GetOrAdd(levels.min - 1, l => new FiniteGrid2D<char>(5, 5, '.'));
+           _ =  maps.GetOrAdd(levels.max + 1l, l => new FiniteGrid2D<char>(5, 5, '.'));
+            for (int lvl = levels.min - 1; lvl <= levels.max + 1; lvl++)
+            {
+                
+            }
+        }
+
+        private static char Step(FiniteGrid2D<char> map, Point p)
+        {
+            var neighborCount = map.Get4NeighborsOf(p).Count(n => map[n] == '#');
+            if (map[p] == '#')
+            {
+                return neighborCount == 1 ? '#' : '.';
+            }
+            return (neighborCount == 1 || neighborCount == 2) ? '#' : '.';
+        }
+
+        private static char Step2(FiniteGrid2D<char> map, Point p)
+        {
+            var neighborCount = map.Get4NeighborsOf(p).Count(n => map[n] == '#');
+            if (map[p] == '#')
             {
                 return neighborCount == 1 ? '#' : '.';
             }
