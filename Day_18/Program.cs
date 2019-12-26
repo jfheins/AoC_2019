@@ -25,7 +25,7 @@ namespace Day_18
             var sw = new Stopwatch();
             sw.Start();
 
-            var input = File.ReadAllLines("../../../input2.txt");
+            var input = File.ReadAllLines(@"../../../input2.txt");
 
             _map = new Dictionary<Point, char>();
             var robotMarker = '1';
@@ -65,6 +65,7 @@ namespace Day_18
                     _keyPaths.Add((key.Key, _map[other.Target]), (other.Length, neededKeys));
                 }
             }
+            _minStepsBetweenKeys = _keyPaths.Min(x => x.Value.length);
 
             var strategySearch = new AStarSearch<string[]>(new StateComparer2(), Expander);
 
@@ -87,28 +88,12 @@ namespace Day_18
 
         private static float EstimateRemainder(string[] keys)
         {
-            return keys.Sum(EstimateRemainder);
+            return (_allKeys.Count + 4 - keys.Sum(arr => arr.Length)) * _minStepsBetweenKeys;
         }
 
         private static float EstimateRemainder(string keys)
         {
-            var thisKey = keys[^1];
-            var neededKeys = _allKeys.Except(keys).Where(k => _keyPaths.ContainsKey((thisKey, k))).ToList();
-
-            if (neededKeys.Count == 0)
-                return 0;
-
-            if (neededKeys.Count == 1)
-                return _keyPaths[(thisKey, neededKeys[0])].length;
-
-            var minFirst = neededKeys.Select(n => _keyPaths[(thisKey, n)]).Select(p => p.length).Min();
-            var minBetween = new Combinations<char>(neededKeys, 2)
-                .Select(pair => _keyPaths[(pair[0], pair[1])].length)
-                .MinBy(x => x)
-                .Take(neededKeys.Count - 1)
-                .Sum();
-
-            return minFirst + minBetween;
+            return (_allKeys.Count + 1 - keys.Length) * _minStepsBetweenKeys;
         }
 
         private static IEnumerable<Point> PointExpandThroughDoors(Point arg)
@@ -127,6 +112,7 @@ namespace Day_18
         }
 
         private static Dictionary<string, long> _reachCache = new Dictionary<string, long>();
+        private static int _minStepsBetweenKeys;
 
         public static long ReachableKeys(string[] ownedKeys) => checked(ownedKeys.Sum(ReachableKeys));
 
@@ -173,6 +159,7 @@ namespace Day_18
             Func<Point, IEnumerable<Point>> expander = P => ExpandPoint(P, ownedKeys);
 
             var thisKey = keys[^1];
+            keys = SortString(keys);
             var result = new List<(string node, float cost)>();
 
             foreach (var otherKey in _allKeys.Except(ownedKeys))
@@ -188,6 +175,12 @@ namespace Day_18
 
             return result;
 
+        }
+        static string SortString(string input)
+        {
+            var characters = input.ToCharArray();
+            Array.Sort(characters);
+            return new string(characters);
         }
 
         private static IEnumerable<Point> ExpandPoint(Point p, HashSet<char> availableKeys)
@@ -233,9 +226,18 @@ namespace Day_18
 
         class StateComparer2 : IEqualityComparer<string[]>
         {
-            public bool Equals([AllowNull] string[] left, [AllowNull] string[] right) => ReachableKeys(left) == ReachableKeys(right);
+            public bool Equals([AllowNull] string[] left, [AllowNull] string[] right)
+            {
+                Debug.Assert(left.Length == right.Length);
 
-            public int GetHashCode([DisallowNull] string[] obj) => obj.Aggregate(0, (hash, str) => HashCode.Combine(hash, str.Length));
+                var res = true;
+                for (int i = 0; i < left.Length; i++)
+                    res = res && (left[i] == right[i]);
+
+                return res;
+            }
+
+            public int GetHashCode([DisallowNull] string[] obj) => obj[0].GetHashCode();
         }
     }
 }
