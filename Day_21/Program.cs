@@ -19,13 +19,13 @@ namespace Day_21
 
             Console.WindowHeight = Math.Max(Console.WindowHeight, 40);
 
-            c.QueueInput("NOT A J\n");
-            c.QueueInput("NOT B T\n");
-            c.QueueInput("OR T J\n");
-            c.QueueInput("NOT C T\n");
-            c.QueueInput("OR T J\n");
-            c.QueueInput("AND D J\n");
-            c.QueueInput("WALK\n");
+            c.QueueInput("NOT A J");
+            c.QueueInput("NOT B T");
+            c.QueueInput("OR T J");
+            c.QueueInput("NOT C T");
+            c.QueueInput("OR T J");
+            c.QueueInput("AND D J");
+            c.QueueInput("WALK");
 
             Console.Clear();
             c.Outputs.Clear();
@@ -45,17 +45,17 @@ namespace Day_21
 
             c = LongCodeComputer.FromFile(@"../../../input.txt");
 
-            c.QueueInput("NOT A J\n");
-            c.QueueInput("NOT B T\n");
-            c.QueueInput("OR T J\n");
-            c.QueueInput("NOT C T\n");
-            c.QueueInput("OR T J\n");
-            c.QueueInput("AND D J\n");
-            c.QueueInput("NOT E T\n");
-            c.QueueInput("NOT T T\n");
-            c.QueueInput("OR H T\n");
-            c.QueueInput("AND T J\n");
-            c.QueueInput("RUN\n");
+            c.QueueInput("NOT A J");
+            c.QueueInput("NOT B T");
+            c.QueueInput("OR T J");
+            c.QueueInput("NOT C T");
+            c.QueueInput("OR T J");
+            c.QueueInput("AND D J");
+            c.QueueInput("NOT E T");
+            c.QueueInput("NOT T T");
+            c.QueueInput("OR H T");
+            c.QueueInput("AND T J");
+            c.QueueInput("RUN");
 
             c.Outputs.Clear();
 
