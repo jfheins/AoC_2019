@@ -11,8 +11,8 @@ namespace Day_12
         public Vector128<int> Velocities;
 
 
-        private new Vector128<int> referencePos;
-        private new Vector128<int> referenceVel;
+        private Vector128<int> referencePos;
+        private Vector128<int> referenceVel;
 
         public Problem1D(Vector128<int> positions)
         {
