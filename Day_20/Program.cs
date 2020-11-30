@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+
 using Core;
 using Core.Combinatorics;
 
@@ -89,7 +90,7 @@ namespace Day_20
             {
                 foreach (Direction dir in Directions.Reading)
                 {
-                    if (char.IsUpper(_laby.GetValueOrDefault(portal.MoveTo(dir))))
+                    if (char.IsUpper(_laby.GetValueOrDefault(portal.MoveTo(dir), ' ')))
                     {
                         var name = "" + _laby[portal.MoveTo(dir)] + _laby[portal.MoveTo(dir, 2)];
                         yield return (portal, name);
@@ -98,7 +99,7 @@ namespace Day_20
                 }
                 foreach (Direction dir in Directions.AntiReading)
                 {
-                    if (char.IsUpper(_laby.GetValueOrDefault(portal.MoveTo(dir))))
+                    if (char.IsUpper(_laby.GetValueOrDefault(portal.MoveTo(dir), ' ')))
                     {
                         var name = "" + _laby[portal.MoveTo(dir, 2)] + _laby[portal.MoveTo(dir)];
                         yield return (portal, name);
@@ -111,7 +112,7 @@ namespace Day_20
         private static IEnumerable<Point> GetPortalPositions(FiniteGrid2D<char> laby)
         {
             return laby.Where(t => t.value == '.' &&
-            t.pos.MoveLURD().Any(n => char.IsUpper(laby.GetValueOrDefault(n))))
+            t.pos.MoveLURD().Any(n => char.IsUpper(laby.GetValueOrDefault(n, ' '))))
                 .Select(t => t.pos);
         }
     }

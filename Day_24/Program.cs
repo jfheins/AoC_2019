@@ -48,9 +48,9 @@ namespace Day_24
 
         private static void StepAllMaps()
         {
-            var levels = _maps.Keys.MinMax();
-            _maps[levels.min - 1] = new FiniteGrid2D<char>(5, 5, '.');
-            _maps[levels.max + 1] = new FiniteGrid2D<char>(5, 5, '.');
+            var (min, max) = _maps.Keys.MinMax().Value;
+            _maps[min - 1] = new FiniteGrid2D<char>(5, 5, '.');
+            _maps[max + 1] = new FiniteGrid2D<char>(5, 5, '.');
 
             var newmaps = _maps.Select(kvp => (idx: kvp.Key, map: Step2(kvp.Key))).ToList();
             _maps = newmaps.ToDictionary(x => x.idx, x => x.map);
