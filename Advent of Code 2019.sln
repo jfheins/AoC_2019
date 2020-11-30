@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.161
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{DDA88C67-E84A-4B0A-84E8-CDB3F93D65D0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core\Core.csproj", "{DDA88C67-E84A-4B0A-84E8-CDB3F93D65D0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Test", "Core.Test\Core.Test.csproj", "{DB930279-10D9-4236-BA11-982083D83A16}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Test", "Core\Core.Test\Core.Test.csproj", "{DB930279-10D9-4236-BA11-982083D83A16}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Day_02", "Day_02\Day_02.csproj", "{AFDD81DC-33A2-4A13-9BDA-DB889C298426}"
 EndProject
